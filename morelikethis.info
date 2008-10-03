@@ -1,0 +1,5 @@
+; $Id $
+name = More Like This
+description = "Provides functionality to find more articles like this"
+core = 6.x
+

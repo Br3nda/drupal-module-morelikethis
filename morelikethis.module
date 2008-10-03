@@ -1,0 +1,306 @@
+<?php
+/*
+  Copyright (C) 2008 by Phase2 Technology.
+  Author(s): Frank Febbraro
+
+  This program is free software; you can redistribute it and/or modify
+  it under the terms of the GNU General Public License.
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY. See the LICENSE.txt file for more details.
+
+  $Id: morelikethis.module,v 1.1 2008/10/03 16:36:58 febbraro Exp $
+*/
+/**
+ * @file morelikethis.module
+ * TODO: - Caching for performance improvements of internal search.
+ *       - Add pluggable more like this mechanism that supports:
+ *          - the current taxonomy search
+ *          - an internal calais search
+ *          - yahoo boss search
+ *          - internal drupal search
+ *          - apache solr search
+ *          - any other mechanism that could be imagined
+ */
+
+/**
+ * Implementation of hook_perm().
+ */
+function morelikethis_perm() {
+  return array('administer morelikethis');
+}
+
+/**
+ * Implementation of hook_theme().
+ */
+function morelikethis_theme() {
+  return array(
+    'morelikethis_block' => array(
+      'arguments' => array('items' => NULL),
+    ),
+    'morelikethis_item' => array(
+      'arguments' => array('item' => NULL),
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_menu().
+ */
+function morelikethis_menu() {
+  
+  $items['admin/settings/morelikethis'] = array(
+    'title' => 'More Like This settings',
+    'description' => 'Configuration for More Like This.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('morelikethis_settings_form'),
+    'access arguments' => array('administer morelikethis'),
+    'file' => 'morelikethis.admin.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Implementation of hook_block().
+ */
+function morelikethis_block($op = 'list', $delta = 0, $edit = array()) {
+
+  switch ($op) {
+    case 'list':
+      return _mlt_block_list();
+      break;
+    case 'view':
+      return _mlt_block_view($delta);
+      break;
+  }
+}
+
+/**
+ * Provide block listing.
+ */
+function _mlt_block_list(){
+  $blocks = array();  
+  $blocks[0] = array(
+    'info' => t('More Like This Block'),
+  );
+  return $blocks;
+}
+
+/**
+ * Display More Like This block.
+ */
+function _mlt_block_view($delta){
+  switch ($delta) {
+    case 0:    
+      if(arg(0) == 'node' && is_numeric(arg(1))) {
+        $block['subject'] = t('More Like This');
+        $more = morelikethis_find(arg(1));    
+        $block['content'] = theme('morelikethis_block', $more);
+      }
+      break;
+  }
+  return $block;
+}
+
+/**
+ * Load term data for a node
+ */
+function morelikethis_load($vid) {
+  $result = db_query("SELECT term FROM {morelikethis} WHERE vid = %d", $vid);
+  $terms = array();
+  while($term = db_result($result)) {
+    $terms[] = $term;
+  }
+  return $terms;
+}
+
+
+/**
+ * Save the data used to render the morelikethis terms.
+ */
+function morelikethis_save($node, $data) {
+  $terms = drupal_explode_tags($data['terms']);
+  foreach($terms as $term) {
+    db_query("INSERT INTO {morelikethis} (nid, vid, term) VALUES (%d, %d, '%s')", $node->nid, $node->vid, $term);
+  }
+}
+
+/**
+ * Attempt to find internal nodes that are like the provided node. Use the list of terms 
+ * provided in the morelikethis DNA to search the taxonomy for other nodes matching these
+ * terms. This is the guts behind the internal More Like This search.
+ *
+ * @param nid
+ *    The node id to find related content
+ */
+function morelikethis_find($nid) {
+  $node = node_load($nid);
+  $key = drupal_strtolower($node->type);
+  $types = variable_get("morelikethis_target_types_{$key}", FALSE);
+
+  if(empty($types))
+    return FALSE;
+  
+  $terms = morelikethis_load($node->vid);
+  $term_count = count($terms);
+  
+  if($term_count == 0)
+    return FALSE;
+  
+  $types = array_keys($types);
+  $count = intval(variable_get("morelikethis_count_{$key}", 10));
+  $threshold = floatval(variable_get("morelikethis_threshold_{$key}", 0.0));
+    
+  $sql = "SELECT n.nid, n.title, count(*) as hits, count(*)/$term_count as relevance";
+  $sql .= " FROM {node} n";
+  $sql .= " JOIN {term_node} tn ON n.nid = tn.nid";
+  $sql .= " JOIN {term_data} td ON tn.tid = td.tid";
+  $sql .= " WHERE n.nid <> %d";
+  $sql .= " AND n.type IN (" . db_placeholders($types, 'varchar') . ")";
+  $sql .= " AND td.name IN (" . db_placeholders($terms, 'varchar') . ")";
+  $sql .= " GROUP BY n.nid";
+  $sql .= " HAVING relevance >= %f";
+  $sql .= " ORDER BY hits DESC, n.nid DESC";
+  $args = array_merge(array($node->nid), $types, $terms, array($threshold));
+  
+  $result = db_query_range($sql, $args, 0, $count);
+  
+  $likeness = array();
+  while($likenode = db_fetch_object($result)) {
+    $likeness[] = $likenode;
+  }
+  return $likeness;
+}
+
+/**
+ * Implementation of hook_form_alter().
+ *
+ * Add the More Like This fields to the node edit form.
+ */
+function morelikethis_form_alter(&$form, $form_state, $form_id) {
+  
+  if (isset($form['type']) && isset($form['#node']) && $form['type']['#value'] .'_node_form' == $form_id) {
+    $node = $form['#node'];
+    $key = drupal_strtolower($node->type);
+    
+    if(!variable_get("morelikethis_enabled_{$key}", FALSE))
+      return;
+    
+    if($node->taxonomy) {
+      $options = array();
+      foreach ($node->taxonomy as $term) {
+        $vocab = taxonomy_vocabulary_load($term->vid);
+        $key = $vocab->name;
+        
+        if(!array_key_exists($key, $options)) {
+          $options[$key] = array();
+        }
+        // Remove quotes surrounding terms
+        $term_name = preg_replace('/^"(.*)"$/', '\1', $term->name);
+        $options[$key][$term_name] = $term_name;
+      }
+    }
+    
+    $terms = drupal_implode_tags(morelikethis_load($node->vid));
+    
+    $form['morelikethis'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('More Like This'),
+      '#tree' => TRUE,
+      '#collapsible' => TRUE,
+      '#collapsed' => FALSE,
+    );
+
+    $form['morelikethis']['terms'] = array(
+      '#type' => 'textfield',
+      '#title' => t('More Like This Terms'),
+      '#description' => t('A comma-separated list of terms that will be used as the "identity" of this content item to find more content that is like this. You can select existing taxonomy terms form the list below, or enter in your own manually. Example: election, stock market, "Company, Inc.".'),
+      '#maxlength' => 255,
+      '#default_value' => $terms,
+    );
+
+    if(!empty($options)) {
+      $form['morelikethis']['taxonomy-terms'] = array(
+        '#type' => 'select',
+        '#title' => t('Choose existing terms'),
+        '#description' => t('Selecting terms will put them in the above textfield.'),
+        '#size' => 5,
+        '#options' => $options,
+      );
+    }   
+    
+    $path = drupal_get_path('module', 'morelikethis');
+    drupal_add_js("$path/morelikethis.js", 'module');
+  }
+}
+
+/**
+ * Implementation of hook_nodeapi().
+ */
+function morelikethis_nodeapi(&$node, $op) {
+  switch ($op) {
+    case 'insert':
+    case 'update':
+      if(property_exists($node, 'morelikethis')) {
+        morelikethis_save($node, $node->morelikethis);
+      }
+      break;
+    case 'delete':
+      db_query('DELETE FROM {morelikethis} WHERE nid = %d', $node->nid);
+      break;
+    case 'view':
+      $more = morelikethis_find($node->nid);
+      if($more) {
+        _morelikethis_build_node_property($node, $more);
+      }
+      break;
+  }
+}
+
+/**
+ * Builds the morelikethis property for a node.
+ *
+ * @param $node
+ *    The node to add a property that contains More Like This data.
+ * @param $more
+ *    An array of More Like This data for the provided node.
+ */
+function _morelikethis_build_node_property(&$node, $more) {
+  $node->morelikethis = array();
+  
+  foreach($more as $item) {
+    $entry = array(
+      '#item' => $item,
+      '#view' => theme('morelikethis_item', $item),
+    );
+    $node->morelikethis[] = $entry;
+  }
+}
+
+/**
+ * Theme the body of the More Like This block.
+ *
+ * @param $items
+ *    An array of More Like This objects for the provided node.
+ */
+function theme_morelikethis_block($items){
+  if(!$items)
+    return t('No related items were found.');
+  
+  $links = array();
+  foreach($items as $item){
+    $links[] = theme('morelikethis_item', $item);
+  }
+  return theme('item_list', $links);
+}
+
+/**
+ * Theme an individual morelikethis item.
+ *
+ * @param $item
+ *    An More Like This object for the provided node.
+ */
+function theme_morelikethis_item($item) {
+  $percentage = sprintf('%.1f%%', $item->relevance * 100);
+  return l("$item->title ($percentage)", "node/$item->nid");
+}

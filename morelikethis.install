@@ -1,0 +1,71 @@
+<?php
+/*
+  Copyright (C) 2008 by Phase2 Technology.
+  Author(s): Frank Febbraro
+
+  This program is free software; you can redistribute it and/or modify
+  it under the terms of the GNU General Public License.
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY. See the LICENSE.txt file for more details.
+
+  $Id: morelikethis.install,v 1.1 2008/10/03 16:36:58 febbraro Exp $
+ */
+/**
+ * @file
+ */
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function morelikethis_uninstall() {
+  drupal_uninstall_schema('morelikethis');
+  
+  db_query("DELETE FROM {variable} WHERE name like 'morelikethis_%'");
+}
+
+/**
+ * Implementation of hook_install().
+ */
+function morelikethis_install() {
+  drupal_install_schema('morelikethis');
+  
+  // Module weights: put after something like calais (which is 10)
+  db_query("UPDATE {system} SET weight = 15 WHERE name = 'morelikethis'");
+}
+
+/**
+ * Implementation of hook_schema().
+ */
+function morelikethis_schema() {
+  
+  $schema['morelikethis'] = array(
+    'description' => 'Data associated with Calais Geomapping for nodes',
+    'fields' => array(
+      'vid' => array(
+        'type' => 'int', 
+        'unsigned' => TRUE, 
+        'not null' => TRUE, 
+        'default' => 0,
+        'description' => t('The node revision id')
+      ),
+      'nid' => array(
+        'type' => 'int', 
+        'unsigned' => TRUE, 
+        'not null' => TRUE, 
+        'default' => 0,
+        'description' => t('The node id')
+      ),
+      'term' => array(
+        'type' => 'varchar', 
+        'length' => 255, 
+        'description' => t('The term to add to their lookup')
+      ),
+    ),
+    'indexes' => array(
+      'nid' => array('nid'),
+      'vid' => array('vid'),
+    ),
+  );
+  
+  return $schema;
+}
