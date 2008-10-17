@@ -8,7 +8,7 @@
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY. See the LICENSE.txt file for more details.
 
-  $Id: morelikethis.module,v 1.1 2008/10/03 16:36:58 febbraro Exp $
+  $Id: morelikethis.module,v 1.1.2.1 2008/10/17 21:42:37 febbraro Exp $
 */
 /**
  * @file morelikethis.module
@@ -33,7 +33,7 @@ function morelikethis_perm() {
  * Implementation of hook_theme().
  */
 function morelikethis_theme() {
-  return array(
+  $theme = array(
     'morelikethis_block' => array(
       'arguments' => array('items' => NULL),
     ),
@@ -41,23 +41,107 @@ function morelikethis_theme() {
       'arguments' => array('item' => NULL),
     ),
   );
+  return $theme;
 }
 
 /**
  * Implementation of hook_menu().
  */
 function morelikethis_menu() {
+ 
+  $items = array();
+  $access = array('administer morelikethis');
+
+  $services = _morelikethis_providers();
+  if (count($services) == 0)
+    return $items;
   
   $items['admin/settings/morelikethis'] = array(
     'title' => 'More Like This settings',
     'description' => 'Configuration for More Like This.',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('morelikethis_settings_form'),
-    'access arguments' => array('administer morelikethis'),
+    'page callback' => 'morelikethis_settings',
+    'access arguments' => $access,
     'file' => 'morelikethis.admin.inc',
   );
 
+  foreach ( $services as $service => $definition ) {  
+    $items['admin/settings/morelikethis/' . $service] = array(
+      'title' => $definition['title'] , " Configuration",
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array($definition['settings']),
+      'access arguments' => $access,
+    );
+  }
+  
   return $items;
+}
+
+/**
+ * Implementation of hook_autoload_info().
+ *
+ * This is used to load the MoreLikeThis classes for executing searches 
+ * without having to explicitly include files.
+ */
+function morelikethis_autoload_info() {
+  $autoload = array(
+    'MoreLikeThis' => array(
+      'file' => 'morelikethis.class.inc',
+    ),
+    'MoreLikeThisBase' => array(
+      'file' => 'morelikethis.class.inc',
+    ),
+  );
+
+  $services = _morelikethis_providers();
+  foreach ( $services as $service => $definition ) {  
+    $class = $definition['class'];
+    $file = $definition['file'];
+    $filepath = isset($definition['filepath']) 
+                  ? $definition['filepath'] 
+                  : drupal_get_path('module', $definition['module']);
+    $autoload[$class] = array(
+      'file' => $file,
+      'file path' => $filepath,
+    );
+  }
+  
+  return $autoload;
+}
+
+/**
+ * Get all enabled morelikethis providers. Do some caching to avoid useless DB calls.
+ *
+ * @param $reset
+ *    Should this request rebuild the cache.
+ * @return
+ *    An array of More Like This providers.
+ */
+function _morelikethis_providers($reset = FALSE) {
+  static $providers;
+  if($reset) {
+    $providers = NULL;
+  }
+  
+  if(isset($providers)) {
+    return $providers;
+  }
+  else if (!$reset && ($cache = cache_get('morelikethis_providers')) && isset($cache->data)) {
+    $providers = $cache->data;
+    return $providers;
+  }
+  
+  $providers = array();
+  foreach (module_implements('morelikethis') as $module) {
+    $provider_details = call_user_func($module .'_morelikethis');
+    if (isset($provider_details) && is_array($provider_details)) {
+      foreach (array_keys($provider_details) as $item) {
+        $provider_details[$item]['module'] = $module;
+      }
+      $providers = array_merge($providers, $provider_details);
+    }
+  }
+  cache_set('morelikethis_providers', $providers);
+  return $providers;
 }
 
 /**
@@ -80,30 +164,35 @@ function morelikethis_block($op = 'list', $delta = 0, $edit = array()) {
  */
 function _mlt_block_list(){
   $blocks = array();  
-  $blocks[0] = array(
-    'info' => t('More Like This Block'),
-  );
+  
+  $services = _morelikethis_providers();
+  foreach ( $services as $service => $definition ) {
+    $blocks[$service] = array(
+      'info' => t($definition['title'] . ' Block'),
+    );
+  }
+  
   return $blocks;
 }
 
 /**
- * Display More Like This block.
+ * Display the More Like This blocks.
  */
 function _mlt_block_view($delta){
-  switch ($delta) {
-    case 0:    
-      if(arg(0) == 'node' && is_numeric(arg(1))) {
-        $block['subject'] = t('More Like This');
-        $more = morelikethis_find(arg(1));    
-        $block['content'] = theme('morelikethis_block', $more);
-      }
-      break;
+  if(arg(0) == 'node' && is_numeric(arg(1))) {
+    $services = _morelikethis_providers();
+    $service = $services[$delta];
+    if($service) {
+      $block['subject'] = t($service['title']);
+      $more = morelikethis_find(arg(1), $delta);    
+      $block['content'] = theme(array("morelikethis_{$delta}_block", 'morelikethis_block'), $more);
+    }
   }
   return $block;
 }
 
 /**
- * Load term data for a node
+ * Load MLT term data for a node
  */
 function morelikethis_load($vid) {
   $result = db_query("SELECT term FROM {morelikethis} WHERE vid = %d", $vid);
@@ -119,6 +208,7 @@ function morelikethis_load($vid) {
  * Save the data used to render the morelikethis terms.
  */
 function morelikethis_save($node, $data) {
+  db_query('DELETE FROM {morelikethis} WHERE nid = %d', $node->nid);
   $terms = drupal_explode_tags($data['terms']);
   foreach($terms as $term) {
     db_query("INSERT INTO {morelikethis} (nid, vid, term) VALUES (%d, %d, '%s')", $node->nid, $node->vid, $term);
@@ -126,50 +216,48 @@ function morelikethis_save($node, $data) {
 }
 
 /**
- * Attempt to find internal nodes that are like the provided node. Use the list of terms 
- * provided in the morelikethis DNA to search the taxonomy for other nodes matching these
- * terms. This is the guts behind the internal More Like This search.
+ * Find all morelikethis results for all enabled services.
+ */
+function morelikethis_find_all($nid) {
+  $services = _morelikethis_providers();
+  $morelikethis = array();
+  foreach ( $services as $service => $definition ) {
+    $morelikethis[$service] = morelikethis_find($nid, $service);
+  }  
+  return $morelikethis;
+}
+
+/**
+ * Invoke the morelikethis lookup for a particular enabled service.
  *
  * @param nid
  *    The node id to find related content
+ * @param $service
+ *    The key identifying the morelikethis service to invoke.
+ * @see 
+ *    hook_morelikethis()
  */
-function morelikethis_find($nid) {
+function morelikethis_find($nid, $service = NULL) {
   $node = node_load($nid);
-  $key = drupal_strtolower($node->type);
-  $types = variable_get("morelikethis_target_types_{$key}", FALSE);
 
-  if(empty($types))
-    return FALSE;
-  
   $terms = morelikethis_load($node->vid);
   $term_count = count($terms);
   
   if($term_count == 0)
     return FALSE;
   
-  $types = array_keys($types);
-  $count = intval(variable_get("morelikethis_count_{$key}", 10));
-  $threshold = floatval(variable_get("morelikethis_threshold_{$key}", 0.0));
-    
-  $sql = "SELECT n.nid, n.title, count(*) as hits, count(*)/$term_count as relevance";
-  $sql .= " FROM {node} n";
-  $sql .= " JOIN {term_node} tn ON n.nid = tn.nid";
-  $sql .= " JOIN {term_data} td ON tn.tid = td.tid";
-  $sql .= " WHERE n.nid <> %d";
-  $sql .= " AND n.type IN (" . db_placeholders($types, 'varchar') . ")";
-  $sql .= " AND td.name IN (" . db_placeholders($terms, 'varchar') . ")";
-  $sql .= " GROUP BY n.nid";
-  $sql .= " HAVING relevance >= %f";
-  $sql .= " ORDER BY hits DESC, n.nid DESC";
-  $args = array_merge(array($node->nid), $types, $terms, array($threshold));
+  $services = _morelikethis_providers();
   
-  $result = db_query_range($sql, $args, 0, $count);
+  $class = $services[$service]['class'];
+  $impl = new $class;
   
-  $likeness = array();
-  while($likenode = db_fetch_object($result)) {
-    $likeness[] = $likenode;
+  $morelikethis = array();
+  if($impl->isEnabled($node->type)) {
+    $impl->setNode($node);
+    $impl->addTerm($terms);
+    $morelikethis = $impl->find();    
   }
-  return $likeness;
+  return $morelikethis;
 }
 
 /**
@@ -183,9 +271,9 @@ function morelikethis_form_alter(&$form, $form_state, $form_id) {
     $node = $form['#node'];
     $key = drupal_strtolower($node->type);
     
-    if(!variable_get("morelikethis_enabled_{$key}", FALSE))
+    if(!_morelikethis_is_enabled($key))
       return;
-    
+        
     if($node->taxonomy) {
       $options = array();
       foreach ($node->taxonomy as $term) {
@@ -234,6 +322,21 @@ function morelikethis_form_alter(&$form, $form_state, $form_id) {
   }
 }
 
+// Check if this type is enabled for any service.
+function _morelikethis_is_enabled($type) {
+  $services = _morelikethis_providers();
+
+  foreach ( $services as $definition ) {
+    $class = $definition['class'];
+    $impl = new $class;
+    if ($impl->isEnabled($type)) {
+      return TRUE;
+    }
+  }
+  
+  return FALSE;
+}
+
 /**
  * Implementation of hook_nodeapi().
  */
@@ -249,10 +352,8 @@ function morelikethis_nodeapi(&$node, $op) {
       db_query('DELETE FROM {morelikethis} WHERE nid = %d', $node->nid);
       break;
     case 'view':
-      $more = morelikethis_find($node->nid);
-      if($more) {
-        _morelikethis_build_node_property($node, $more);
-      }
+      $more = morelikethis_find_all($node->nid);
+      _morelikethis_build_node_properties($node, $more);
       break;
   }
 }
@@ -265,15 +366,18 @@ function morelikethis_nodeapi(&$node, $op) {
  * @param $more
  *    An array of More Like This data for the provided node.
  */
-function _morelikethis_build_node_property(&$node, $more) {
+function _morelikethis_build_node_properties(&$node, $more) {
   $node->morelikethis = array();
-  
-  foreach($more as $item) {
-    $entry = array(
-      '#item' => $item,
-      '#view' => theme('morelikethis_item', $item),
-    );
-    $node->morelikethis[] = $entry;
+  foreach($more as $key => $items) {
+    if($items) {
+      foreach($items as $item) {
+        $entry = array(
+          '#item' => $item,
+          '#view' => theme(array("morelikethis_{$key}_item", 'morelikethis_item'), $item),
+        );
+        $node->morelikethis[$key][] = $entry;
+      }
+    }
   }
 }
 
@@ -289,7 +393,7 @@ function theme_morelikethis_block($items){
   
   $links = array();
   foreach($items as $item){
-    $links[] = theme('morelikethis_item', $item);
+    $links[] = theme(array("morelikethis_{$item->mlt_type}_item", 'morelikethis_item'), $item);
   }
   return theme('item_list', $links);
 }
@@ -301,6 +405,7 @@ function theme_morelikethis_block($items){
  *    An More Like This object for the provided node.
  */
 function theme_morelikethis_item($item) {
-  $percentage = sprintf('%.1f%%', $item->relevance * 100);
-  return l("$item->title ($percentage)", "node/$item->nid");
+  return l("$item->title", $item->url);
 }
+
+

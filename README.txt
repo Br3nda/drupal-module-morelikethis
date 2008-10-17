@@ -1,4 +1,4 @@
-; $Id: README.txt,v 1.1 2008/10/03 16:36:58 febbraro Exp $
+; $Id: README.txt,v 1.1.2.1 2008/10/17 21:42:37 febbraro Exp $
 
 More Like This
 --------------
@@ -52,8 +52,14 @@ $node->morelikethis = array(
   [0] => array(
     ['#view'] => '<a href="some/node/path">Node Title (80%)</a>',
     ['#item'] => object(stdClass)#18 (4) {
-      ["nid"]=> "183"
+      ["id"]=> "183"
       ["title"]=> "Node Title"
+      ["url"]=> "node/183"
+      ["mlt_type"]=> "taxonomy"
+      
+      // Optional properties provided by the modules may be...
+      ["nid"]=> "183"
+      ["type"]=> "story"
       ["hits"]=> "4"
       ["relevance"]=> "0.8"
     }
