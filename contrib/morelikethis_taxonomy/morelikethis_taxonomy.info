@@ -1,0 +1,7 @@
+; $Id $
+name = More Like This - Taxonomy
+package = "More Like This"
+description = "Provides a Taxonomy based lookup for More Like This functionality"
+core = 6.x
+dependencies[] = morelikethis
+dependencies[] = taxonomy

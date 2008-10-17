@@ -1,0 +1,134 @@
+<?php
+
+class MoreLikeThisTaxonomyTestBase extends DrupalWebTestCase {
+
+	function setUp() {
+		parent::setUp('autoload', 'morelikethis', 'taxonomy', 'morelikethis_taxonomy');
+		
+		// Create and login user
+    $admin_user = $this->drupalCreateUser();
+    $this->drupalLogin($admin_user);
+	}
+
+	function tearDown() {
+		parent::tearDown();
+	}
+
+	function createVocabulary() {
+		$vocab = array();
+	  $vocab['name'] = $this->randomName(20);
+    taxonomy_save_vocabulary($vocab);
+		return $vocab;
+	}
+	
+	function createTerm($vid) {
+		$term = array();
+		$term['vid'] = $vid;
+	  $term['name'] = $this->randomName(30);
+		$term['description'] = $this->randomName(200);
+    taxonomy_save_term($term);
+		return $term;
+	}
+}
+
+class MoreLikeThisTaxonomyLookupTestCase extends MoreLikeThisTaxonomyTestBase {
+
+  function getInfo() {
+    return array(
+      'name' => t('Taxonomy Lookup'),
+      'description' => t('Test the lookup mechanism for identifying taxonomy likeness'),
+      'group' => t('More Like This')
+    );
+  }
+
+	function testLookup() {
+		$vocab = $this->createVocabulary();
+		$vid = $vocab['vid'];
+		$t1 = $this->createTerm($vid);
+		$t2 = $this->createTerm($vid);
+		$t3 = $this->createTerm($vid);
+		$t4 = $this->createTerm($vid);
+		$t5 = $this->createTerm($vid);
+		$t6 = $this->createTerm($vid);
+		
+		$n1 = $this->createNode('page', $vid, $t1, $t2, $t3, $t4, $t5);
+		$n2 = $this->createNode('story', $vid, $t1, $t2, $t3, $t4);
+		$n3 = $this->createNode('page', $vid, $t1, $t2, $t3);
+		$n4 = $this->createNode('story', $vid, $t1, $t2);
+		$n5 = $this->createNode('page', $vid, $t1);
+		$n6 = $this->createNode('page', $vid, $t6);
+
+		variable_set('morelikethis_taxonomy_enabled_page', 1);
+		variable_set('morelikethis_taxonomy_target_types_page', array('page' => 'page', 'story' => 'story'));
+		variable_set('morelikethis_taxonomy_count_page', '3');
+		variable_set('morelikethis_taxonomy_threshold_page', '0.5');
+		
+		// Test filter on count & threshold
+		$results = morelikethis_find($n1->nid, 'taxonomy');
+		//dvm($results);
+		$this->assertEqual(count($results), 2, "Matched results equal expected for test1");
+		$this->assertLikeness($results[0], $n2->nid, 4);
+		$this->assertLikeness($results[1], $n3->nid, 3);
+
+		// Test filter on count (threshold misses)
+		$results = morelikethis_find($n3->nid, 'taxonomy');
+		$this->assertEqual(count($results), 3, "Matched results equal expected for test2");
+		$this->assertLikeness($results[0], $n2->nid, 3);
+		$this->assertLikeness($results[1], $n1->nid, 3);
+		$this->assertLikeness($results[2], $n4->nid, 2);
+
+		// Test filter on count (threshold misses)
+		$results = morelikethis_find($n5->nid, 'taxonomy');
+		$this->assertEqual(count($results), 3, "Matched results equal expected for test3");
+		$this->assertLikeness($results[0], $n4->nid, 1);
+		$this->assertLikeness($results[1], $n3->nid, 1);
+		$this->assertLikeness($results[2], $n2->nid, 1);
+		//$this->assertLikeness($results[3], $n1->nid, 1);
+
+		variable_set('morelikethis_taxonomy_target_types_page', array('page' => 'page'));
+		variable_del('morelikethis_taxonomy_count_page');
+		variable_del('morelikethis_taxonomy_threshold_page');
+		
+		// Test on node type filtering
+		$results = morelikethis_find($n1->nid, 'taxonomy');
+		$this->assertEqual(count($results), 2, "Matched results equal expected for test4");
+		$this->assertLikeness($results[0], $n3->nid, 3);
+		$this->assertLikeness($results[1], $n5->nid, 1);
+
+		// Test on threshold boundary
+		variable_set('morelikethis_taxonomy_threshold_page', 0.6);
+		$results = morelikethis_find($n1->nid, 'taxonomy');
+		$this->assertEqual(count($results), 1, "Matched results equal expected for test5");
+		$this->assertLikeness($results[0], $n3->nid, 3);
+
+		$results = morelikethis_find($n6->nid, 'taxonomy');
+		$this->assertEqual(count($results), 0, "No results should be found");
+	}
+	
+	function createNode() {
+		$args = func_get_args();
+		$type = array_shift($args);
+		$vid = array_shift($args);
+		$terms = array();
+		foreach ($args as $arg) {
+			$terms[] = $arg['name'];
+		}
+		
+		$terms = drupal_implode_tags($terms);
+		$params = array(
+			'type' => $type,
+			'taxonomy' => array(
+				'tags' => array($vid => $terms),
+			),
+			'morelikethis' => array(
+				'terms' => $terms,
+			),
+		);
+		return $this->drupalCreateNode($params);
+	}
+	
+	function assertLikeness($result, $expected_nid, $expected_hits) {
+		$this->assertEqual($result->nid, $expected_nid, "nid: {$result->nid} equals expected: {$expected_nid}");
+		$this->assertEqual($result->hits, $expected_hits, "hits: {$result->hits} equals expected: {$expected_hits}");
+	}
+}
