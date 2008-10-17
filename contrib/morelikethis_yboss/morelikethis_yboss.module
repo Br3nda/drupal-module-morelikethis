@@ -1,0 +1,273 @@
+<?php
+/*
+  Copyright (C) 2008 by Phase2 Technology.
+  Author(s): Frank Febbraro
+
+  This program is free software; you can redistribute it and/or modify
+  it under the terms of the GNU General Public License.
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY. See the LICENSE.txt file for more details.
+
+  $Id: morelikethis_yboss.module,v 1.1.2.1 2008/10/17 21:40:48 febbraro Exp $
+*/
+/**
+ * @file morelikethis_yboss.module
+ */
+
+function morelikethis_yboss_theme() {
+  $theme = array();
+  $theme["morelikethis_yboss_item"] = array(
+    'arguments' => array('item' => NULL),
+  );
+  $theme["morelikethis_yboss_web_item"] = array(
+    'arguments' => array('item' => NULL),
+  );
+  $theme["morelikethis_yboss_news_item"] = array(
+    'arguments' => array('item' => NULL),
+  );
+  $theme["morelikethis_ybossimg_item"] = array(
+    'arguments' => array('item' => NULL),
+  );
+  return $theme;
+}
+
+/**
+ * Implementation of hook_morelikethis().
+ */
+function morelikethis_yboss_morelikethis() {
+  return array(
+    'yboss' => array(
+      'title' => 'More Like This Yahoo! BOSS',
+      'class' => 'MoreLikeThisYahooBoss',
+      'file' => 'morelikethis_yboss.class.inc',
+      'settings' => 'morelikethis_yboss_settings',
+    ),
+    'ybossimg' => array(
+      'title' => 'More Like This Yahoo! BOSS Images',
+      'class' => 'MoreLikeThisYahooBossIMages',
+      'file' => 'morelikethis_yboss.class.inc',
+      'settings' => 'morelikethis_ybossimg_settings',
+    ),
+  );
+}
+
+/**
+ * Theme an individual morelikethis item.
+ *
+ * @param $item
+ *    An More Like This object for the provided node.
+ */
+function theme_morelikethis_yboss_item($item) {
+  return theme("morelikethis_yboss_{$item->yboss_type}_item", $item);
+}
+
+/**
+ * Theme an individual morelikethis web item.
+ *
+ * @param $item
+ *    An More Like This object for the provided node.
+ */
+function theme_morelikethis_yboss_web_item($item) {
+  return l("$item->title ($item->date)", $item->clickurl);
+}
+
+/**
+ * Theme an individual morelikethis news item.
+ *
+ * @param $item
+ *    An More Like This object for the provided node.
+ */
+function theme_morelikethis_yboss_news_item($item) {
+  $output = l("$item->title", $item->clickurl);
+  $output .= ' - (' . l("$item->source", $item->sourceurl) . ')';
+  return $output;
+}
+
+/**
+ * Theme an individual morelikethis images item.
+ *
+ * @param $item
+ *    An More Like This object for the provided node.
+ */
+function theme_morelikethis_ybossimg_item($item) {
+  $img = '<img src="'. check_url($item->thumbnail_url) .'" alt="'. check_plain($item->title) .'" title="'. check_plain($item->title) .'"/>';
+  return l("$img", $item->clickurl, array('html' => TRUE));
+}
+
+/**
+ * Settings for More Like This Yahoo! BOSS Web & News functionality.
+ */
+function morelikethis_yboss_settings() {
+  
+  node_types_rebuild();
+  $types = node_get_types('types', NULL, TRUE);
+  
+  $options = array();
+  foreach ($types as $type) {
+    $options[$type->type] = $type->name;
+  }
+  
+  $form = array();
+  $form = _mlt_yboss_global_settings('morelikethis_yboss');
+  $form['morelikethis']["morelikethis_yboss_type"] = array(
+    '#type' => 'textfield',
+    '#title' => t('Document types'),
+    '#description' => t('Enter a comma-separated list of <a href="http://developer.yahoo.com/search/boss/boss_guide/Web_Search.html#type">supported document types</a> to return, e.g. <em>-text</em> to exclude plain text documents.'),
+    '#default_value' => variable_get('morelikethis_yboss_type', ''),
+    '#size' => 60,
+  );
+  
+  foreach ($types as $type) {
+    // Settings per content type
+    $key = drupal_strtolower($type->type);
+    $name = $type->name;
+    $param_name = array('@name' => $name);
+
+    $form["morelikethis_{$key}"] = array(
+      '#type' => 'fieldset',
+      '#title' => t('@name', $param_name),
+      '#collapsible' => TRUE,
+      '#collapsed' => FALSE,
+    );
+    $form["morelikethis_{$key}"]["morelikethis_yboss_enabled_{$key}"] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Enable More Like This'),
+      '#default_value' => variable_get("morelikethis_yboss_enabled_{$key}", FALSE),
+      '#description' => t('Should searches for more content like this be enabled for this content type.'),
+    );
+    $form["morelikethis_{$key}"]["morelikethis_yboss_search_{$key}"] = array(
+      '#type' => 'select',
+      '#title' => t('Type of BOSS Search'),
+      '#options' => drupal_map_assoc(array('web', 'news')),
+      '#default_value' => variable_get("morelikethis_yboss_search_{$key}", NULL),
+      '#description' => t('<em>web</em>: The entire web. <em>news</em>: Limited to news related sites'),
+    );
+    $form["morelikethis_{$key}"]["morelikethis_yboss_count_{$key}"] = array(
+      '#type' => 'textfield',
+      '#title' => t('Number of results'),
+      '#size' => 4,
+      '#maxlength' => 4,
+      '#default_value' => variable_get("morelikethis_yboss_count_{$key}", '10'),
+      '#description' => t('Specify the number of items to include in the listing of More Like This results. Default: 10'),
+    );
+    $form["morelikethis_{$key}"]["morelikethis_yboss_query_{$key}"] = array(
+      '#type' => 'textfield',
+      '#title' => t('Appended query string'),
+      '#description' => t('You may append an additional query string to the search query.  For example, <q>site:drupal.org -site:cvs.drupal.org</q>. If this is blank it will use the global settings above.'),
+      '#default_value' => variable_get("morelikethis_yboss_query_{$key}", ''),
+      '#maxlength' => 640,
+      '#size' => 80,
+    );
+    $form["morelikethis_{$key}"]["morelikethis_yboss_type_{$key}"] = array(
+      '#type' => 'textfield',
+      '#title' => t('Document types'),
+      '#description' => t('Enter a comma-separated list of <a href="http://developer.yahoo.com/search/boss/boss_guide/Web_Search.html#type">supported document types</a> to return, e.g. <em>-text</em> to exclude plain text documents. If this is blank it will use the global settings above.'),
+      '#default_value' => variable_get("morelikethis_yboss_type_{$key}", ''),
+      '#size' => 60,
+    );    
+  }
+    
+  return system_settings_form($form);
+}
+
+/**
+ * Settings for More Like This Yahoo! BOSS Images functionality.
+ */
+function morelikethis_ybossimg_settings() {
+  
+  node_types_rebuild();
+  $types = node_get_types('types', NULL, TRUE);
+  
+  $options = array();
+  foreach ($types as $type) {
+    $options[$type->type] = $type->name;
+  }
+  
+  $form = array();
+  $form = _mlt_yboss_global_settings('morelikethis_ybossimg');
+  
+  foreach ($types as $type) {
+    // Settings per content type
+    $key = drupal_strtolower($type->type);
+    $name = $type->name;
+    $param_name = array('@name' => $name);
+
+    $form["morelikethis_{$key}"] = array(
+      '#type' => 'fieldset',
+      '#title' => t('@name', $param_name),
+      '#collapsible' => TRUE,
+      '#collapsed' => FALSE,
+    );
+    $form["morelikethis_{$key}"]["morelikethis_ybossimg_enabled_{$key}"] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Enable More Like This'),
+      '#default_value' => variable_get("morelikethis_ybossimg_enabled_{$key}", FALSE),
+      '#description' => t('Should searches for more content like this be enabled for this content type.'),
+    );
+    $form["morelikethis_{$key}"]["morelikethis_ybossimg_count_{$key}"] = array(
+      '#type' => 'textfield',
+      '#title' => t('Number of results'),
+      '#size' => 4,
+      '#maxlength' => 4,
+      '#default_value' => variable_get("morelikethis_ybossimg_count_{$key}", '10'),
+      '#description' => t('Specify the number of items to include in the listing of More Like This results. Default: 10'),
+    );
+    $form["morelikethis_{$key}"]["morelikethis_ybossimg_query_{$key}"] = array(
+      '#type' => 'textfield',
+      '#title' => t('Appended query string'),
+      '#description' => t('You may append an additional query string to the search query.  For example, <q>site:drupal.org -site:cvs.drupal.org</q>. If this is blank it will use the global settings above.'),
+      '#default_value' => variable_get("morelikethis_ybossimg_query_{$key}", ''),
+      '#maxlength' => 640,
+      '#size' => 80,
+    );
+  }
+    
+  return system_settings_form($form);
+}
+
+/**
+ *
+ */
+function _mlt_yboss_global_settings($prefix) {
+  $form = array();
+  $form['morelikethis'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Yahoo! BOSS Global Settings'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+  );
+
+  $form['morelikethis']["{$prefix}_appid"] = array(
+    '#type' => 'textfield',
+    '#title' => t('Yahoo BOSS App ID'),
+    '#description' => t('Enter a valid <a href="http://developer.yahoo.com/wsregapp/">Yahoo application ID</a>.'),
+    '#default_value' => variable_get("{$prefix}_appid", ''),
+    '#maxlength' => 255,
+    '#size' => 80,
+  );
+  $form['morelikethis']["{$prefix}_lang"] = array(
+    '#type' => 'textfield',
+    '#title' => t('Language'),
+    '#description' => t('Specify a <a href="http://developer.yahoo.com/search/boss/boss_guide/supp_regions_lang.html">valid language code</a>.'),
+    '#default_value' => variable_get("{$prefix}_lang", 'en'),
+    '#maxlength' => 2,
+    '#size' => 5,
+  );
+  $form['morelikethis']["{$prefix}_region"] = array(
+    '#type' => 'textfield',
+    '#title' => t('Region'),
+    '#description' => t('Specify a <a href="http://developer.yahoo.com/search/boss/boss_guide/supp_regions_lang.html">valid region (country) code</a>.'),
+    '#default_value' => variable_get("{$prefix}_region", 'us'),
+    '#maxlength' => 2,
+    '#size' => 5,
+  );
+  $form['morelikethis']["{$prefix}_query"] = array(
+    '#type' => 'textfield',
+    '#title' => t('Appended query string'),
+    '#description' => t('You may append an additional query string to the search query.  For example, <q>site:drupal.org -site:cvs.drupal.org</q>.'),
+    '#default_value' => variable_get("{$prefix}_query", ''),
+    '#maxlength' => 640,
+    '#size' => 80,
+  );
+  return $form;
+}

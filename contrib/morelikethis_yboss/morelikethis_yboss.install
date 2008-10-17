@@ -1,0 +1,37 @@
+<?php
+/*
+  Copyright (C) 2008 by Phase2 Technology.
+  Author(s): Frank Febbraro
+
+  This program is free software; you can redistribute it and/or modify
+  it under the terms of the GNU General Public License.
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY. See the LICENSE.txt file for more details.
+
+  $Id: morelikethis_yboss.install,v 1.1.2.1 2008/10/17 21:40:48 febbraro Exp $
+ */
+/**
+ * @file
+ */
+
+/**
+ * Implementation of hook_requirements().
+ */
+function morelikethis_yboss_requirements($phase) {
+  $t = get_t();
+  $loaded = extension_loaded('simplexml');
+  $severity = array(TRUE => REQUIREMENT_OK, FALSE => REQUIREMENT_ERROR);
+  $value = array(TRUE => $t('Loaded'), FALSE => $t('Not loaded'));
+  $requirements['simplexml']['title'] = $t('SimpleXML extension');
+  $requirements['simplexml']['description'] = $t('More Like This Yahoo! BOSS module requires the PHP SimpleXML extension.');
+  $requirements['simplexml']['value'] = ($phase == 'runtime') ? $value[$loaded] : NULL;
+  $requirements['simplexml']['severity'] = $severity[$loaded];
+  return $requirements;
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function morelikethis_yboss_uninstall() {
+  db_query("DELETE FROM {variable} WHERE name like 'morelikethis_yboss_%'");
+}

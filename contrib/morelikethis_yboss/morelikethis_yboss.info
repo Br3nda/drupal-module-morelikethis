@@ -1,0 +1,6 @@
+; $Id $
+name = More Like This - Yahoo! BOSS
+package = "More Like This"
+description = "Provides a Yahoo! BOSS custom search based lookup for More Like This functionality"
+core = 6.x
+dependencies[] = morelikethis
