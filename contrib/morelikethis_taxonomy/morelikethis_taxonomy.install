@@ -8,7 +8,7 @@
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY. See the LICENSE.txt file for more details.
 
-  $Id: morelikethis_taxonomy.install,v 1.1.2.1 2008/10/17 21:40:13 febbraro Exp $
+  $Id: morelikethis_taxonomy.install,v 1.1.2.2 2008/10/18 20:49:15 febbraro Exp $
  */
 /**
  * @file
@@ -19,5 +19,22 @@
  */
 function morelikethis_taxonomy_uninstall() {
   db_query("DELETE FROM {variable} WHERE name like 'morelikethis_taxonomy_%'");
+}
+
+// Fix the variable names rom 0.9
+function morelikethis_taxonomy_update_6100() { 
+  $ret = array();
+  
+  node_types_rebuild();
+  $types = node_get_types('types', NULL, TRUE);
+  foreach ($types as $type) {
+    $key = drupal_strtolower($type->type);    
+    $ret[] = update_sql("UPDATE {variable} SET name = 'morelikethis_taxonomy_enabled_{$key}' WHERE name = 'morelikethis_enabled_{$key}'");
+    $ret[] = update_sql("UPDATE {variable} SET name = 'morelikethis_taxonomy_target_types_{$key}' WHERE name = 'morelikethis_target_types_{$key}'");
+    $ret[] = update_sql("UPDATE {variable} SET name = 'morelikethis_taxonomy_count_{$key}' WHERE name = 'morelikethis_count_{$key}'");
+    $ret[] = update_sql("UPDATE {variable} SET name = 'morelikethis_taxonomy_threshold_{$key}' WHERE name = 'morelikethis_threshold_{$key}'");
+  }
+  
+  return $ret;
 }
 
