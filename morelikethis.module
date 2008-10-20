@@ -8,7 +8,7 @@
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY. See the LICENSE.txt file for more details.
 
-  $Id: morelikethis.module,v 1.1.2.1 2008/10/17 21:42:37 febbraro Exp $
+  $Id: morelikethis.module,v 1.1.2.2 2008/10/20 22:06:54 febbraro Exp $
 */
 /**
  * @file morelikethis.module
@@ -184,6 +184,11 @@ function _mlt_block_view($delta){
     $service = $services[$delta];
     if($service) {
       $block['subject'] = t($service['title']);
+      
+      $node = node_load(arg(1));
+      //$block['content'] = print_r($node->morelikethis[$delta], true);
+      //$block['content'] = print_r($node, true);
+      
       $more = morelikethis_find(arg(1), $delta);    
       $block['content'] = theme(array("morelikethis_{$delta}_block", 'morelikethis_block'), $more);
     }
@@ -219,12 +224,17 @@ function morelikethis_save($node, $data) {
  * Find all morelikethis results for all enabled services.
  */
 function morelikethis_find_all($nid) {
+  static $morelikethis;
+  
+  if(isset($morelikethis[$nid])) {
+    return $morelikethis[$nid];
+  }
+  
   $services = _morelikethis_providers();
-  $morelikethis = array();
   foreach ( $services as $service => $definition ) {
-    $morelikethis[$service] = morelikethis_find($nid, $service);
+    $morelikethis[$nid][$service] = morelikethis_find($nid, $service);
   }  
-  return $morelikethis;
+  return $morelikethis[$nid];
 }
 
 /**
@@ -238,6 +248,12 @@ function morelikethis_find_all($nid) {
  *    hook_morelikethis()
  */
 function morelikethis_find($nid, $service = NULL) {
+  static $morelikethis;
+  
+  if(isset($morelikethis[$nid][$service])) {
+    return $morelikethis[$nid][$service];
+  }
+
   $node = node_load($nid);
 
   $terms = morelikethis_load($node->vid);
@@ -251,13 +267,12 @@ function morelikethis_find($nid, $service = NULL) {
   $class = $services[$service]['class'];
   $impl = new $class;
   
-  $morelikethis = array();
   if($impl->isEnabled($node->type)) {
     $impl->setNode($node);
     $impl->addTerm($terms);
-    $morelikethis = $impl->find();    
+    $morelikethis[$nid][$service] = $impl->find();    
   }
-  return $morelikethis;
+  return $morelikethis[$nid][$service];
 }
 
 /**
