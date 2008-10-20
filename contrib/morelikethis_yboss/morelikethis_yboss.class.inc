@@ -8,7 +8,7 @@
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY. See the LICENSE.txt file for more details.
 
-  $Id: morelikethis_yboss.class.inc,v 1.1.2.1 2008/10/17 21:40:48 febbraro Exp $
+  $Id: morelikethis_yboss.class.inc,v 1.1.2.2 2008/10/20 18:37:50 febbraro Exp $
 */
 /**
  * @file morelikethis_yboss.class.inc
@@ -41,6 +41,11 @@ abstract class YahooBossBase extends MoreLikeThisBase {
     
     if ($query['format'] == 'xml') {
       $response = simplexml_load_string($request->data);
+      
+      if(!$response) {
+        return array();
+      }
+      
       $search = 'resultset_' . $search;
       $attributes = isset($response->$search) ? $response->$search->attributes() : array();
       if ($error = $response->children('http://schemas.yahooapis.com/'. $version .'/schema.xsd')) {
