@@ -8,7 +8,7 @@
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY. See the LICENSE.txt file for more details.
 
-  $Id: morelikethis_yboss.module,v 1.1.2.3 2008/10/20 22:07:36 febbraro Exp $
+  $Id: morelikethis_yboss.module,v 1.1.2.4 2008/10/20 22:08:59 febbraro Exp $
 */
 /**
  * @file morelikethis_yboss.module
@@ -224,7 +224,7 @@ function morelikethis_ybossimg_settings() {
     $form["morelikethis_{$key}"]["morelikethis_ybossimg_dimensions_{$key}"] = array(
       '#type' => 'select',
       '#title' => t('Image Dimensions'),
-      '#options' => drupal_map_assoc(array('all', 'small', 'medium', 'large', 'wallpaper', 'widewallpaper')),
+      '#options' => drupal_map_assoc(array('all', 'small', 'medium', 'large', 'wallpaper')),
       '#default_value' => variable_get("morelikethis_ybossimg_dimensions_{$key}", 'all'),
       '#description' => t('The size of the destination image returned. Small images are generally thumbnail or icon sized. Medium sized images are average sized; usually not exceeding an average screen size. Large images are screen size or larger.'),
     );
