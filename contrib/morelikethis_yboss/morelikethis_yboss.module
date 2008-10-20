@@ -8,7 +8,7 @@
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY. See the LICENSE.txt file for more details.
 
-  $Id: morelikethis_yboss.module,v 1.1.2.1 2008/10/17 21:40:48 febbraro Exp $
+  $Id: morelikethis_yboss.module,v 1.1.2.2 2008/10/20 18:38:46 febbraro Exp $
 */
 /**
  * @file morelikethis_yboss.module
@@ -109,13 +109,6 @@ function morelikethis_yboss_settings() {
   
   $form = array();
   $form = _mlt_yboss_global_settings('morelikethis_yboss');
-  $form['morelikethis']["morelikethis_yboss_type"] = array(
-    '#type' => 'textfield',
-    '#title' => t('Document types'),
-    '#description' => t('Enter a comma-separated list of <a href="http://developer.yahoo.com/search/boss/boss_guide/Web_Search.html#type">supported document types</a> to return, e.g. <em>-text</em> to exclude plain text documents.'),
-    '#default_value' => variable_get('morelikethis_yboss_type', ''),
-    '#size' => 60,
-  );
   
   foreach ($types as $type) {
     // Settings per content type
@@ -161,7 +154,7 @@ function morelikethis_yboss_settings() {
     $form["morelikethis_{$key}"]["morelikethis_yboss_type_{$key}"] = array(
       '#type' => 'textfield',
       '#title' => t('Document types'),
-      '#description' => t('Enter a comma-separated list of <a href="http://developer.yahoo.com/search/boss/boss_guide/Web_Search.html#type">supported document types</a> to return, e.g. <em>-text</em> to exclude plain text documents. If this is blank it will use the global settings above.'),
+      '#description' => t('Enter a comma-separated list of <a href="http://developer.yahoo.com/search/boss/boss_guide/Web_Search.html#type">supported document types</a> to return, e.g. <em>-text</em> to exclude plain text documents. <b>Note:</b> This is only applicable to <em>web</em> searches, not <em>news</em>. If this is blank it will use the global settings above.'),
       '#default_value' => variable_get("morelikethis_yboss_type_{$key}", ''),
       '#size' => 60,
     );    
