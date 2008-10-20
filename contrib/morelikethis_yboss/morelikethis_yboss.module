@@ -8,7 +8,7 @@
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY. See the LICENSE.txt file for more details.
 
-  $Id: morelikethis_yboss.module,v 1.1.2.2 2008/10/20 18:38:46 febbraro Exp $
+  $Id: morelikethis_yboss.module,v 1.1.2.3 2008/10/20 22:07:36 febbraro Exp $
 */
 /**
  * @file morelikethis_yboss.module
@@ -109,6 +109,14 @@ function morelikethis_yboss_settings() {
   
   $form = array();
   $form = _mlt_yboss_global_settings('morelikethis_yboss');
+  $form['morelikethis']["morelikethis_yboss_query"] = array(
+    '#type' => 'textfield',
+    '#title' => t('Sites'),
+    '#description' => t('You may append an additional specification of sites to use to the search query.  For example, <q>site:cnn.com -site:nytimes.com</q>. A minus preceeding the <em>site</em> keyword will specifically exclude a site.'),
+    '#default_value' => variable_get("{$prefix}_query", ''),
+    '#maxlength' => 640,
+    '#size' => 80,
+  );
   
   foreach ($types as $type) {
     // Settings per content type
@@ -145,8 +153,8 @@ function morelikethis_yboss_settings() {
     );
     $form["morelikethis_{$key}"]["morelikethis_yboss_query_{$key}"] = array(
       '#type' => 'textfield',
-      '#title' => t('Appended query string'),
-      '#description' => t('You may append an additional query string to the search query.  For example, <q>site:drupal.org -site:cvs.drupal.org</q>. If this is blank it will use the global settings above.'),
+      '#title' => t('Sites'),
+      '#description' => t('You may append an additional specification of sites to use to the search query.  For example, <q>site:cnn.com -site:nytimes.com</q>. A minus preceeding the <em>site</em> keyword will specifically exclude a site. If this is blank it will use the global settings above.'),
       '#default_value' => variable_get("morelikethis_yboss_query_{$key}", ''),
       '#maxlength' => 640,
       '#size' => 80,
@@ -178,7 +186,8 @@ function morelikethis_ybossimg_settings() {
   
   $form = array();
   $form = _mlt_yboss_global_settings('morelikethis_ybossimg');
-  
+  $form['morelikethis']['#title'] = t('Yahoo! BOSS Images Global Settings');
+    
   foreach ($types as $type) {
     // Settings per content type
     $key = drupal_strtolower($type->type);
@@ -205,13 +214,19 @@ function morelikethis_ybossimg_settings() {
       '#default_value' => variable_get("morelikethis_ybossimg_count_{$key}", '10'),
       '#description' => t('Specify the number of items to include in the listing of More Like This results. Default: 10'),
     );
-    $form["morelikethis_{$key}"]["morelikethis_ybossimg_query_{$key}"] = array(
-      '#type' => 'textfield',
-      '#title' => t('Appended query string'),
-      '#description' => t('You may append an additional query string to the search query.  For example, <q>site:drupal.org -site:cvs.drupal.org</q>. If this is blank it will use the global settings above.'),
-      '#default_value' => variable_get("morelikethis_ybossimg_query_{$key}", ''),
-      '#maxlength' => 640,
-      '#size' => 80,
+    $form["morelikethis_{$key}"]["morelikethis_ybossimg_filter_{$key}"] = array(
+      '#type' => 'select',
+      '#title' => t('Filter Images'),
+      '#options' => drupal_map_assoc(array('yes', 'no')),
+      '#default_value' => variable_get("morelikethis_ybossimg_filter_{$key}", 'yes'),
+      '#description' => t('Whether or not to activate the Offensive Content Reduction filter. If set to yes, content marked as offensive is omitted from results.'),
+    );
+    $form["morelikethis_{$key}"]["morelikethis_ybossimg_dimensions_{$key}"] = array(
+      '#type' => 'select',
+      '#title' => t('Image Dimensions'),
+      '#options' => drupal_map_assoc(array('all', 'small', 'medium', 'large', 'wallpaper', 'widewallpaper')),
+      '#default_value' => variable_get("morelikethis_ybossimg_dimensions_{$key}", 'all'),
+      '#description' => t('The size of the destination image returned. Small images are generally thumbnail or icon sized. Medium sized images are average sized; usually not exceeding an average screen size. Large images are screen size or larger.'),
     );
   }
     
@@ -253,14 +268,6 @@ function _mlt_yboss_global_settings($prefix) {
     '#default_value' => variable_get("{$prefix}_region", 'us'),
     '#maxlength' => 2,
     '#size' => 5,
-  );
-  $form['morelikethis']["{$prefix}_query"] = array(
-    '#type' => 'textfield',
-    '#title' => t('Appended query string'),
-    '#description' => t('You may append an additional query string to the search query.  For example, <q>site:drupal.org -site:cvs.drupal.org</q>.'),
-    '#default_value' => variable_get("{$prefix}_query", ''),
-    '#maxlength' => 640,
-    '#size' => 80,
   );
   return $form;
 }

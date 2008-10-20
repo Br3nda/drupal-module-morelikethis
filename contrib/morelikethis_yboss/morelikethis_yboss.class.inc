@@ -8,7 +8,7 @@
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY. See the LICENSE.txt file for more details.
 
-  $Id: morelikethis_yboss.class.inc,v 1.1.2.2 2008/10/20 18:37:50 febbraro Exp $
+  $Id: morelikethis_yboss.class.inc,v 1.1.2.3 2008/10/20 22:07:36 febbraro Exp $
 */
 /**
  * @file morelikethis_yboss.class.inc
@@ -148,6 +148,8 @@ class MoreLikeThisYahooBossImages extends YahooBossBase {
 
     $query = array(
       'count' => $count,
+      'filter' => $this->getSetting($type, 'morelikethis_ybossimg_filter'),
+      'dimensions' => $this->getSetting($type, 'morelikethis_ybossimg_dimensions'),
     );
     
     // Add the terms here, surrounded by quotes
