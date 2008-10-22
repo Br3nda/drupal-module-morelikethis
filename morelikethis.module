@@ -8,7 +8,7 @@
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY. See the LICENSE.txt file for more details.
 
-  $Id: morelikethis.module,v 1.1.2.2 2008/10/20 22:06:54 febbraro Exp $
+  $Id: morelikethis.module,v 1.1.2.3 2008/10/22 22:33:45 febbraro Exp $
 */
 /**
  * @file morelikethis.module
@@ -183,14 +183,15 @@ function _mlt_block_view($delta){
     $services = _morelikethis_providers();
     $service = $services[$delta];
     if($service) {
-      $block['subject'] = t($service['title']);
-      
-      $node = node_load(arg(1));
-      //$block['content'] = print_r($node->morelikethis[$delta], true);
-      //$block['content'] = print_r($node, true);
-      
-      $more = morelikethis_find(arg(1), $delta);    
-      $block['content'] = theme(array("morelikethis_{$delta}_block", 'morelikethis_block'), $more);
+      $class = $service['class'];
+      $impl = new $class;
+
+      if($impl->isEnabled($node->type)) {
+        $block['subject'] = t($service['title']);
+        $node = node_load(arg(1));
+        $more = morelikethis_find(arg(1), $delta);    
+        $block['content'] = theme(array("morelikethis_{$delta}_block", 'morelikethis_block'), $more);
+      }
     }
   }
   return $block;
