@@ -8,7 +8,7 @@
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY. See the LICENSE.txt file for more details.
 
-  $Id: morelikethis_yboss.class.inc,v 1.1.2.3 2008/10/20 22:07:36 febbraro Exp $
+  $Id: morelikethis_yboss.class.inc,v 1.1.2.4 2008/10/24 20:44:32 febbraro Exp $
 */
 /**
  * @file morelikethis_yboss.class.inc
@@ -72,7 +72,7 @@ class MoreLikeThisYahooBoss extends YahooBossBase {
     return variable_get("morelikethis_yboss_enabled_{$key}", FALSE);
   }
   
-  public function find() {
+  public function find($settings = array()) {
     $term_count = count($this->terms);
     if($term_count == 0)
       return FALSE;
@@ -137,7 +137,7 @@ class MoreLikeThisYahooBossImages extends YahooBossBase {
     return variable_get("morelikethis_ybossimg_enabled_{$key}", FALSE);
   }
   
-  public function find() {
+  public function find($settings = array()) {
     $term_count = count($this->terms);
     if($term_count == 0)
       return FALSE;
