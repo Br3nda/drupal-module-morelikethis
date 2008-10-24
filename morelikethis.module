@@ -8,7 +8,7 @@
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY. See the LICENSE.txt file for more details.
 
-  $Id: morelikethis.module,v 1.1.2.4 2008/10/24 20:48:14 febbraro Exp $
+  $Id: morelikethis.module,v 1.1.2.5 2008/10/24 22:40:05 febbraro Exp $
 */
 /**
  * @file morelikethis.module
@@ -347,7 +347,7 @@ function morelikethis_form_alter(&$form, $form_state, $form_id) {
         '#type' => 'button',
         '#value' => t('Prefill from Calais'),
         '#attributes' => array('onclick' => '$("#edit-morelikethis-terms").val($("#edit-morelikethis-prefill").val()); return false;'),
-        '#suffix' => '<div> - ' . t('OR') . ' - </div>',
+        '#suffix' => '<span> - ' . t('OR') . ' - </span>',
       );
     }
 
