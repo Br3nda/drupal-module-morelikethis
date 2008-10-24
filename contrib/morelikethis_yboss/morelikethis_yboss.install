@@ -8,7 +8,7 @@
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY. See the LICENSE.txt file for more details.
 
-  $Id: morelikethis_yboss.install,v 1.1.2.1 2008/10/17 21:40:48 febbraro Exp $
+  $Id: morelikethis_yboss.install,v 1.1.2.2 2008/10/24 20:42:19 febbraro Exp $
  */
 /**
  * @file
@@ -34,4 +34,5 @@ function morelikethis_yboss_requirements($phase) {
  */
 function morelikethis_yboss_uninstall() {
   db_query("DELETE FROM {variable} WHERE name like 'morelikethis_yboss_%'");
+  db_query("DELETE FROM {variable} WHERE name like 'morelikethis_ybossimg_%'");
 }
