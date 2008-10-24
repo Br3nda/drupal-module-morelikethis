@@ -8,7 +8,7 @@
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY. See the LICENSE.txt file for more details.
 
-  $Id: morelikethis_yboss.module,v 1.1.2.4 2008/10/20 22:08:59 febbraro Exp $
+  $Id: morelikethis_yboss.module,v 1.1.2.5 2008/10/24 20:41:47 febbraro Exp $
 */
 /**
  * @file morelikethis_yboss.module
@@ -37,16 +37,18 @@ function morelikethis_yboss_theme() {
 function morelikethis_yboss_morelikethis() {
   return array(
     'yboss' => array(
-      'title' => 'More Like This Yahoo! BOSS',
-      'class' => 'MoreLikeThisYahooBoss',
-      'file' => 'morelikethis_yboss.class.inc',
-      'settings' => 'morelikethis_yboss_settings',
+      '#title' => 'More Like This Yahoo! BOSS',
+      '#description' => 'Lookup related content using Yahoo\'s Build your Own Search Service',
+      '#class' => 'MoreLikeThisYahooBoss',
+      '#classfile' => 'morelikethis_yboss.class.inc',
+      '#settings' => 'morelikethis_yboss_settings',
     ),
     'ybossimg' => array(
-      'title' => 'More Like This Yahoo! BOSS Images',
-      'class' => 'MoreLikeThisYahooBossIMages',
-      'file' => 'morelikethis_yboss.class.inc',
-      'settings' => 'morelikethis_ybossimg_settings',
+      '#title' => 'More Like This Yahoo! BOSS Images',
+      '#description' => 'Lookup related images using Yahoo\'s Build your Own Image Search Service',
+      '#class' => 'MoreLikeThisYahooBossImages',
+      '#classfile' => 'morelikethis_yboss.class.inc',
+      '#settings' => 'morelikethis_ybossimg_settings',
     ),
   );
 }
