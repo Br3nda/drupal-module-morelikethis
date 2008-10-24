@@ -8,7 +8,7 @@
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY. See the LICENSE.txt file for more details.
 
-  $Id: morelikethis_taxonomy.module,v 1.1.2.1 2008/10/17 21:40:13 febbraro Exp $
+  $Id: morelikethis_taxonomy.module,v 1.1.2.2 2008/10/24 20:47:08 febbraro Exp $
 */
 /**
  * @file morelikethis_taxonomy.module
@@ -31,11 +31,12 @@ function morelikethis_taxonomy_theme() {
 function morelikethis_taxonomy_morelikethis() {
   return array(
     'taxonomy' => array(
-      'title' => 'More Like This Taxonomy',
-      'class' => 'MoreLikeThisTaxonomy',
-      'file' => 'morelikethis_taxonomy.class.inc',
-      //'filepath' => 'xxx/yyy/zzz',
-      'settings' => 'morelikethis_taxonomy_settings',
+      '#title' => 'More Like This Taxonomy',
+      '#description' => 'Find other content based on Taxonomy matching',
+      '#class' => 'MoreLikeThisTaxonomy',
+      '#classfile' => 'morelikethis_taxonomy.class.inc',
+      //'#classfilepath' => 'xxx/yyy/zzz',
+      '#settings' => 'morelikethis_taxonomy_settings',
     ),
   );
 }
