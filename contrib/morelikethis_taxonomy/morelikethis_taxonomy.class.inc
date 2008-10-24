@@ -8,7 +8,7 @@
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY. See the LICENSE.txt file for more details.
 
-  $Id: morelikethis_taxonomy.class.inc,v 1.1.2.1 2008/10/17 21:40:13 febbraro Exp $
+  $Id: morelikethis_taxonomy.class.inc,v 1.1.2.2 2008/10/24 20:47:40 febbraro Exp $
 */
 /**
  * @file morelikethis_taxonomy.class.inc
@@ -24,7 +24,8 @@ class MoreLikeThisTaxonomy extends MoreLikeThisBase {
     return variable_get("morelikethis_taxonomy_enabled_{$key}", FALSE);
   }
   
-  public function find() {
+  public function find($settings = array()) {
+    
     $term_count = count($this->terms);
     if($term_count == 0)
       return FALSE;
@@ -62,6 +63,6 @@ class MoreLikeThisTaxonomy extends MoreLikeThisBase {
     }
 		
     return $likeness;
-  }
+  }  
 }
 
