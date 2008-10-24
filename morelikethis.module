@@ -8,15 +8,13 @@
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY. See the LICENSE.txt file for more details.
 
-  $Id: morelikethis.module,v 1.1.2.3 2008/10/22 22:33:45 febbraro Exp $
+  $Id: morelikethis.module,v 1.1.2.4 2008/10/24 20:48:14 febbraro Exp $
 */
 /**
  * @file morelikethis.module
- * TODO: - Caching for performance improvements of internal search.
- *       - Add pluggable more like this mechanism that supports:
- *          - the current taxonomy search
+ * TODO:  - Configurability to prepoulate over a calais threshold
+ *        - Add more pluggable services:
  *          - an internal calais search
- *          - yahoo boss search
  *          - internal drupal search
  *          - apache solr search
  *          - any other mechanism that could be imagined
@@ -59,18 +57,22 @@ function morelikethis_menu() {
   $items['admin/settings/morelikethis'] = array(
     'title' => 'More Like This settings',
     'description' => 'Configuration for More Like This.',
-    'page callback' => 'morelikethis_settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('morelikethis_settings'),
     'access arguments' => $access,
     'file' => 'morelikethis.admin.inc',
   );
 
   foreach ( $services as $service => $definition ) {  
-    $items['admin/settings/morelikethis/' . $service] = array(
-      'title' => $definition['title'] , " Configuration",
-      'page callback' => 'drupal_get_form',
-      'page arguments' => array($definition['settings']),
-      'access arguments' => $access,
-    );
+    if(isset($definition['#settings'])) {
+      $items['admin/settings/morelikethis/' . $service] = array(
+        'title' => $definition['#title'] , " Configuration",
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array($definition['#settings']),
+        'access arguments' => $access,
+        'type' => MENU_LOCAL_TASK,
+      );
+    }
   }
   
   return $items;
@@ -94,11 +96,11 @@ function morelikethis_autoload_info() {
 
   $services = _morelikethis_providers();
   foreach ( $services as $service => $definition ) {  
-    $class = $definition['class'];
-    $file = $definition['file'];
-    $filepath = isset($definition['filepath']) 
-                  ? $definition['filepath'] 
-                  : drupal_get_path('module', $definition['module']);
+    $class = $definition['#class'];
+    $file = $definition['#classfile'];
+    $filepath = isset($definition['#classfilepath']) 
+                  ? $definition['#classfilepath'] 
+                  : drupal_get_path('module', $definition['#module']);
     $autoload[$class] = array(
       'file' => $file,
       'file path' => $filepath,
@@ -110,6 +112,18 @@ function morelikethis_autoload_info() {
 
 /**
  * Get all enabled morelikethis providers. Do some caching to avoid useless DB calls.
+ *
+ * Providers can define themselves by implementing hook_morelikethis().
+ *
+ * The implementing hooks should return an array of items keyed on the module or
+ * provider "type" (e.g. "taxonomy", "opencalais", etc.) with key-value pairs. 
+ *
+ * '#title'         : Required. The title of the more like this provider/service.
+ * '#description'   : Optional. Description of the service.
+ * '#class'         : Required. The PHP class that implements the MoreLikeThis interface
+ * '#classfile'     : Required. The file name that contains the MoreLikeThis implementing class.
+ * '#classfilepath' : Optional. The path to the '#classfile' file if not in the root of the module.
+ * '#settings'      : Optional. The name of the FormAPI form method to configure the service.
  *
  * @param $reset
  *    Should this request rebuild the cache.
@@ -135,7 +149,7 @@ function _morelikethis_providers($reset = FALSE) {
     $provider_details = call_user_func($module .'_morelikethis');
     if (isset($provider_details) && is_array($provider_details)) {
       foreach (array_keys($provider_details) as $item) {
-        $provider_details[$item]['module'] = $module;
+        $provider_details[$item]['#module'] = $module;
       }
       $providers = array_merge($providers, $provider_details);
     }
@@ -168,7 +182,7 @@ function _mlt_block_list(){
   $services = _morelikethis_providers();
   foreach ( $services as $service => $definition ) {
     $blocks[$service] = array(
-      'info' => t($definition['title'] . ' Block'),
+      'info' => t($definition['#title'] . ' Block'),
     );
   }
   
@@ -183,7 +197,7 @@ function _mlt_block_view($delta){
     $services = _morelikethis_providers();
     $service = $services[$delta];
     if($service) {
-      $class = $service['class'];
+      $class = $service['#class'];
       $impl = new $class;
 
       if($impl->isEnabled($node->type)) {
@@ -265,7 +279,7 @@ function morelikethis_find($nid, $service = NULL) {
   
   $services = _morelikethis_providers();
   
-  $class = $services[$service]['class'];
+  $class = $services[$service]['#class'];
   $impl = new $class;
   
   if($impl->isEnabled($node->type)) {
@@ -319,9 +333,23 @@ function morelikethis_form_alter(&$form, $form_state, $form_id) {
       '#type' => 'textfield',
       '#title' => t('More Like This Terms'),
       '#description' => t('A comma-separated list of terms that will be used as the "identity" of this content item to find more content that is like this. You can select existing taxonomy terms form the list below, or enter in your own manually. Example: election, stock market, "Company, Inc.".'),
-      '#maxlength' => 255,
+      '#maxlength' => 512,
       '#default_value' => $terms,
     );
+
+    if(empty($terms) && variable_get('morelikethis_calais_default', FALSE)) {
+      $terms = _mlt_get_calais_defaults($node);
+      $form['morelikethis']['prefill'] = array(
+        '#type' => 'hidden',
+        '#value' => $terms,
+      );
+      $form['morelikethis']['prefill_button'] = array(
+        '#type' => 'button',
+        '#value' => t('Prefill from Calais'),
+        '#attributes' => array('onclick' => '$("#edit-morelikethis-terms").val($("#edit-morelikethis-prefill").val()); return false;'),
+        '#suffix' => '<div> - ' . t('OR') . ' - </div>',
+      );
+    }
 
     if(!empty($options)) {
       $form['morelikethis']['taxonomy-terms'] = array(
@@ -343,7 +371,7 @@ function _morelikethis_is_enabled($type) {
   $services = _morelikethis_providers();
 
   foreach ( $services as $definition ) {
-    $class = $definition['class'];
+    $class = $definition['#class'];
     $impl = new $class;
     if ($impl->isEnabled($type)) {
       return TRUE;
@@ -424,4 +452,22 @@ function theme_morelikethis_item($item) {
   return l("$item->title", $item->url);
 }
 
+/**
+ * Return the calais defaults for the current node. Filter out the EventType vocabulary 
+ * since it is not really relevant.
+ */
+function _mlt_get_calais_defaults($node) {
+  $threshold =  variable_get("morelikethis_calais_relevance", '0.500');
+  $keywords = calais_get_keywords($node->nid, $node->type, NULL, $threshold);
+
+  $vocabs = calais_get_entity_vocabularies();
+  
+  $defaults = array();
+  foreach ($keywords as $vid => $terms) {
+    if($vid != $vocabs['EventsFacts']) {
+      $defaults = array_merge($defaults, $terms);
+    }
+  }
+  return drupal_implode_tags($defaults);
+}
 
