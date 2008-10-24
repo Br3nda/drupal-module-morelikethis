@@ -1,7 +1,7 @@
 ; $Id $
-name = More Like This - Taxonomy
+name = MLT - Taxonomy
 package = "More Like This"
-description = "Provides a Taxonomy based lookup for More Like This functionality"
+description = "Provides a Taxonomy based term matching lookup."
 core = 6.x
 dependencies[] = morelikethis
 dependencies[] = taxonomy

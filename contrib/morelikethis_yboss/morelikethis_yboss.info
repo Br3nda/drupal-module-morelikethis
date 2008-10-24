@@ -1,6 +1,6 @@
 ; $Id $
-name = More Like This - Yahoo! BOSS
+name = MLT - Yahoo! BOSS
 package = "More Like This"
-description = "Provides a Yahoo! BOSS custom search based lookup for More Like This functionality"
+description = "Provides a Yahoo! BOSS Web, News, and Image custom search based lookup"
 core = 6.x
 dependencies[] = morelikethis
