@@ -8,7 +8,7 @@
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY. See the LICENSE.txt file for more details.
 
-  $Id: morelikethis.class.inc,v 1.1.2.1 2008/10/17 21:42:37 febbraro Exp $
+  $Id: morelikethis.class.inc,v 1.1.2.2 2008/10/24 20:48:33 febbraro Exp $
 */
 /**
  * @file morelikethis.class.inc
@@ -30,30 +30,42 @@ interface MoreLikeThis {
   public function isEnabled($type);
   
   /**
+   * Sets the node context of a MoreLikeThis Search.
    *
+   * @param $node
+   *    The node to find content about.
    */
   public function setNode($node);
 
   /**
+   * Adds term(s) to search thumbprint.
    *
+   * @param $term
+   *    A term or an array of terms to specify on the search.
    */
   public function addTerm($term);
 
   /**
+   * Find related content.
    *
+   * @param $settings
+   *    Override settings on the class with this array.
+   * @return
+   *    An array of related content objects (or arrays).
+   *    Return fields should have at a minimum the following properties:
+   *     - url   : The URL to the content
+   *     - title : The title of the content
    */
-  public function find();
+  public function find($settings = array());
 }
 
+/**
+ * Base class implementation of the MoreLikeThis interface.
+ */
 abstract class MoreLikeThisBase implements MoreLikeThis  {
   
-  public $node;
-  public $terms;
-  
-  function __construct($node = NULL, $terms = array()) {
-    $this->node = $node;
-    $this->terms = $terms;
-  }
+  public $node = NULL;
+  public $terms = array();
   
   public function setNode($node) {
     $this->node = $node;
