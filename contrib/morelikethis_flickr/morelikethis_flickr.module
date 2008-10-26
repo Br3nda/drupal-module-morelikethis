@@ -1,0 +1,101 @@
+<?php
+
+function morelikethis_flickr_theme() {
+  return array(
+    'morelikethis_flickr_item' => array('arguments' => array('item' => NULL)),
+    'morelikethis_flickr_block' => array('arguments' => array('items' => NULL)),
+  
+   );
+}
+
+function morelikethis_flickr_morelikethis() {
+  return array(
+    'flickr' => array(
+      '#title' => 'More Like This Flickr',
+      '#description' => 'Lookup related content using Flickr',
+      '#class' => 'MoreLikeThisFlickr',
+      '#classfile' => 'morelikethis_flickr.class.inc',
+      '#settings' => 'morelikethis_flickr_settings',
+    ),
+  );
+}
+
+function morelikethis_flickr_settings() {
+	$form['search_params'] = array(
+	 '#type' => 'fieldset',
+	 '#title' => t('Search Parameters'),
+	 '#description' => t('Parameters for the <a target="_blank" href="http://www.flickr.com/services/api/flickr.photos.search.html">flikr.photos.search method</a>.')
+	
+	);
+  $form['search_params']['flickr_api_page_size'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Page Size'),
+    '#default_value' => variable_get('flickr_api_page_size', '10'),    
+  );
+
+  
+  $form['search_params']['flickr_api_thumbnail_size'] = array(
+    '#type' => 'select',
+    '#title' => t('Size Suffixes'),
+    '#description' => t('<a href="http://www.flickr.com/services/api/misc.urls.html">See Photo Source URLs documentation.</a>'),
+    '#options' => array(
+      's' => t('small square, 75x75'),
+      't' => t('thumbnail, 100 on longest side'),
+      'm' => t('small, 240 on longest side'),
+      '' => t('medium, 500 on longest side'),
+      'b' => t('large, 1024 on longest side'),
+      'o' => t('original image'), 
+    ),
+    '#default_value' => variable_get('flickr_api_thumbnail_size', ''),
+  );
+  
+  
+  return  system_settings_form($form);
+}
+
+function theme_morelikethis_flickr_block($items) {
+  // todo: add flag for to disable this, since if you override
+  // the theme.. this becomes useless.
+  drupal_add_css(drupal_get_path('module', "morelikethis") . "/contrib/morelikethis_flickr/mlt_flickr.css");
+  drupal_add_js("
+    $(document).ready(function(){
+      $('ul.mlt-flickr li').hover(
+        function(){ $(this).children('.tags').show();},
+        function(){ $(this).children('.tags').hide();}
+        );
+      $('#block-morelikethis-flickr h2').hover(
+        function(){ $('#block-morelikethis-flickr .search-with').show();},
+        function(){ $('#block-morelikethis-flickr .search-with').hide();}
+        );
+    });", "inline");
+	
+  
+  
+  $output = "<div class='search-with' style='display:none;'>".$items['search_tags']. "</div>";
+  $output .= "<ul class='mlt-flickr'>";
+
+ if($items) {
+    foreach($items as $photo) {
+      $output .= "<li>". theme('morelikethis_flickr_item', $photo);
+      $output .= "<div class='tags' style='display:none'>".$photo['tags']."</div>" . "</li>";
+    }
+  }
+  else
+    $output .= "<li>No photos found</li>";
+      
+  $output .= "</ul>";
+
+  return $output;  
+}
+
+
+function theme_morelikethis_flickr_item($photo) {
+  $options['html'] = TRUE;
+  $options['absolute'] = TRUE;
+  
+  $link = "<img src='". $photo['url'] ."'/>";
+  $url = "http://www.flickr.com/photos/". $photo['owner'] ."/". $photo['id'];
+  
+  return l($link, $url, $options);
+}
+
