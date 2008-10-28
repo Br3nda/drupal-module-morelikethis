@@ -1,0 +1,7 @@
+; $Id $
+name = MLT - Google Video
+package = "More Like This"
+description = "Provides a lookup for Google Video"
+core = 6.x
+dependencies[] = morelikethis 
+dependencies[] = calais

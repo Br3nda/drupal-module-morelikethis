@@ -1,0 +1,249 @@
+<?php
+/**
+ * Implementation of hook_theme()
+ */
+function morelikethis_googlevideo_theme() {
+  return array(
+    'morelikethis_googlevideo_block' => array('arguments' => array('items' => NULL)),
+    'gs_video_wrapper' => array('arguments' => array('video_bar_id' => NULL, 'status_bar_id' => NULL)),
+   );
+}
+
+/**
+ * Implementation of hook_morelikethis()
+ */
+function morelikethis_googlevideo_morelikethis() {
+  return array(
+    'googlevideo' => array(
+      '#title' => 'More Like This Google Video',
+      '#description' => 'Lookup related content using Google Video Search Service',
+      '#class' => 'MoreLikeThisGoogleVideo',
+      '#classfile' => 'morelikethis_googlevideo.class.inc',
+      '#settings' => 'morelikethis_googlevideo_settings',
+    ),
+  );
+}
+
+/**
+ * Implementation of theme override for morelikethis block for this service
+ *
+ * @param array $items
+ * @return HTML string.
+ * @see morelikethis.module
+ */
+function theme_morelikethis_googlevideo_block($items) {
+	
+  drupal_add_js(drupal_get_path('module', 'morelikethis') . "/contrib/morelikethis_googlevideo/api.js");
+  drupal_add_css(drupal_get_path('module', 'morelikethis') .'/contrib/morelikethis_googlevideo/gsearch.css');
+  drupal_add_js(drupal_get_path('module', 'morelikethis') .'/contrib/morelikethis_googlevideo/gsvideobar.js');  
+  drupal_add_css(drupal_get_path('module', 'morelikethis') .'/contrib/morelikethis_googlevideo/gsvideobar.css');
+  
+  $node = node_load(arg(1));
+  
+  $tags = _get_calais_terms($node, variable_get('gv_block_threshold', 0.25), '", "');
+  $tags = '"'.$tags.'"';
+  
+  $status_bar = variable_get('medialikethis_gv_use_statusroot', TRUE);
+  $status_root = ($status_bar ? 'statusRoot : document.getElementById("'.variable_get('medialikethis_gv_statusroot_id', 'videoBarStatus').'"),' : '');
+  drupal_add_js('
+	  function LoadVideoBar() {
+	    var vbr;
+	    
+	    var options = {
+	      largeResultSet : '.variable_get('medialikethis_gv_large_result_set', 'false').',
+	      horizontal : '.variable_get('medialikethis_gv_orient', 'true').',
+	      autoExecuteList : {
+	        cycleTime : '.variable_get('medialikethis_gv_cycle_time', 'GSvideoBar.CYCLE_TIME_SHORT').',
+	        cycleMode : '.variable_get('medialikethis_gv_cycle_mode', 'GSvideoBar.CYCLE_MODE_LINEAR').','. 
+	        $status_root .    
+	       'executeList : ['.$tags.']
+	      }
+	    }
+	    
+	    vbr = new GSvideoBar(
+	                document.getElementById("'.variable_get('medialikethis_gv_videobar_id', 'google_video_like_this_bar').'"),
+	                GSvideoBar.PLAYER_ROOT_FLOATING,
+	                options
+	                );
+	  }
+	  
+	  GSearch.setOnLoadCallback(LoadVideoBar);  
+	  ', 'inline');
+  
+  return theme('gs_video_wrapper', 
+     variable_get('medialikethis_gv_videobar_id', 'google_video_like_this_bar'),
+     variable_get('medialikethis_gv_statusroot_id', 'videoBarStatus')
+   );
+}
+
+/**
+ * Theme for HTML surrounding video player.
+ *
+ * @param string $video_bar_id
+ * @param string $status_bar_id
+ * @return HTML string
+ */
+function theme_gs_video_wrapper($video_bar_id, $status_bar_id){
+  $output = "<div class='google_video_wrapper'>";
+  $output .= "<div id='$video_bar_id'>Loading...</div>";
+  $output .= "<div id='$status_bar_id'>Loading...</div>";
+  $output .= "</div>";
+  return $output;
+}
+
+/**
+ * FAPI definition for morelikethis Google video settings
+ *
+ * @ingroup forms
+ */
+function morelikethis_googlevideo_settings() {
+
+  node_types_rebuild();
+  $types = node_get_types('types', NULL, TRUE);
+  
+  $form['gv_types'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('General Settings'),
+    '#description' => t('Select the types that allow More Like This Google Video content.'),
+  );
+  
+  foreach($types as $type) {
+    $key = drupal_strtolower($type->type);
+    $form['gv_types']["morelikethis_gv_content_type_$key"] = array(
+     '#type' => 'checkbox',
+     '#title' => t($type->name),
+     '#default_value' => variable_get("morelikethis_gv_content_type_$key", NULL),
+    );
+  }
+  $form['gv_types']['gv_block_threshold'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Threshold'),
+    '#description' => t('Only tags having relevancy above the threshold are returned.  Number should be between 0.0 to 1.0'),
+    '#size' => 4,
+    '#default_value' => variable_get('gv_block_threshold', 0.25),
+  );	
+	
+  $form['googlevideo'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Google Video Bar Settings'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+    '#description' => "Video Bar Documentation can be found <a target='_blank' href='http://www.google.com/uds/solutions/videobar/reference.html'>here</a>",
+  );
+  
+  $form['googlevideo']['morelikethis_gv_large_result_set'] = array(
+    '#type' => 'select',
+    '#title' => t('Result Set Size'),
+    '#options' => array( 'true' => t("Large"), 'false' => t("Small") ),
+    '#default_value' => variable_get('morelikethis_gv_large_result_set', 'false'),    
+  );
+  $form['googlevideo']['morelikethis_gv_orient'] = array(
+    '#type' => 'select',
+    '#title' => t('Orientation'),
+    '#description' => t('Orientate the videos horizontally or Vertically.'),
+    '#options' => array( 'true' => t('Horizontal'), 'false' => t('Vertical')),
+    '#default_value' => variable_get('morelikethis_gv_orient', 'true'),    
+  );  
+  $form['googlevideo']['morelikethis_gv_cycle_time'] = array(
+    '#type' => 'select',
+    '#title' => t('Video Bar Cycle Time'),
+    '#description' => t('defines the amount of time between Video Bar refreshes'),
+    '#options' => array(
+      'GSvideoBar.CYCLE_TIME_SHORT' => t('CYCLE_TIME_SHORT // ~10s'),
+      'GSvideoBar.CYCLE_TIME_MEDIUM' => t('CYCLE_TIME_MEDIUM // ~15s'),
+      'GSvideoBar.CYCLE_TIME_LONG' => t('CYCLE_TIME_LONG // ~30s'),
+    ),
+    '#default_value' => variable_get('morelikethis_gv_cycle_time', 'GSvideoBar.CYCLE_TIME_SHORT'),
+  );
+  $form['googlevideo']['morelikethis_gv_cycle_mode'] = array(
+    '#type' => 'select',
+    '#title' => t('Video Bar Cycle Mode'),
+    '#description' => t('set the cycle mode to either random mode or sequential mode'),
+    '#options' => array(
+      'GSvideoBar.CYCLE_MODE_LINEAR' => t('CYCLE_MODE_LINEAR'),
+      'GSvideoBar.CYCLE_MODE_RANDOM' => t('CYCLE_MODE_RANDOM'),
+      ),
+    '#default_value' => variable_get('morelikethis_gv_cycle_mode', 'GSvideoBar.CYCLE_MODE_LINEAR'),
+  );
+  $form['googlevideo']['morelikethis_gv_use_statusroot'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Use Status Root'),
+    '#description' => t('Region with clickable links to manually switch the video bar'),
+    '#default_value' => variable_get('morelikethis_gv_use_statusroot', TRUE),
+  );  
+  $form['googlevideo']['morelikethis_gv_statusroot_id'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Status Root CSS ID'),
+    '#description' => t('HTML ID for this container of the status root.'),
+    '#default_value' => variable_get('morelikethis_gv_statusroot_id', 'videoBarStatus'),
+  );  
+  $form['googlevideo']['morelikethis_gv_videobar_id'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Video Bar CSS ID'),
+    '#description' => t('HTML ID for this container of the video bar.'),
+    '#default_value' => variable_get('morelikethis_gv_videobar_id', 'google_video_like_this_bar'),
+  );  
+
+  return system_settings_form($form);
+}
+
+/**
+ * Helper to pull calais tags for the node provided.
+ *
+ * @param node object $node
+ * @param float $threshold
+ * @param string $delimeter
+ * @return string of tags separated by $delimeter
+ */
+function _get_calais_terms($node, $threshold, $delimeter = ", ") {
+  $tags = array();
+  $most_relevant = NULL;
+  
+  // calais_get_keywords only returns the keywords that meet the threshold set on the nodetype,
+  // so its a real possiblity to not get any resulting terms is the threshold is high.
+  // the term_more_relevant function should look at all the terms, and pick the most relevant of
+  // whats available, not necessarily just from the tags that meet the threshold.  This would be to
+  // ensure that the blocks are not empty.
+  $calais_suggestions = calais_get_keywords($node->nid, $node->type);
+
+  foreach($calais_suggestions as $vocab) {
+    if(empty($vocab))
+      continue;
+
+    foreach($vocab as $term) {
+      $c_term = calais_get_node_term($node->nid, $term);
+      
+      $most_relevant = term_more_relevant($c_term, $most_relevant);
+      
+      if((float)$c_term->relevance >= (float)$threshold) {
+        $tags[$c_term->relevance*1000] = $term;
+      }
+    }
+  }
+    
+  // if empty, return the highest rated tag.
+  if(empty($tags)){
+    $tags[] = $most_relevant->value;
+  }
+  
+  return implode($delimeter, $tags);
+}
+
+/**
+ * From two terms, return the one with higher relevancy
+ *
+ * @param $term1
+ * @param $term2
+ * @return term with higher relevancy
+ */
+function term_more_relevant($term1, $term2 = NULL) {
+  if($term2 == NULL)
+    return $term1;
+
+  if ((float)$term1->relevance > (float)$term2->relevance ) {
+    return $term1;  
+  }
+  return $term2;
+}
+
+
