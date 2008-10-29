@@ -8,7 +8,7 @@
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY. See the LICENSE.txt file for more details.
 
-  $Id: morelikethis.module,v 1.1.2.5 2008/10/24 22:40:05 febbraro Exp $
+  $Id: morelikethis.module,v 1.1.2.6 2008/10/29 14:14:19 febbraro Exp $
 */
 /**
  * @file morelikethis.module
@@ -183,6 +183,7 @@ function _mlt_block_list(){
   foreach ( $services as $service => $definition ) {
     $blocks[$service] = array(
       'info' => t($definition['#title'] . ' Block'),
+      'cache' => BLOCK_CACHE_PER_PAGE,
     );
   }
   
