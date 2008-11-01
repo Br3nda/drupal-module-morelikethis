@@ -21,6 +21,20 @@ function morelikethis_flickr_morelikethis() {
 }
 
 function morelikethis_flickr_settings() {
+  node_types_rebuild();
+  $types = node_get_types('types', NULL, TRUE);
+  
+  $form['global_settings'] = array( '#type' => 'fieldset', '#title'=> t('Global Settings'));
+  
+  foreach($types as $type) {
+  	$key = drupal_strtolower($type->type);
+	  $form['global_settings']["morelikethis_flickr_content_type_$key"] = array(
+	   '#type' => 'checkbox',
+	   '#title' => t($type->name),
+	   '#default_value' => variable_get("morelikethis_flickr_content_type_$key", NULL),
+	  );
+  }
+	
 	$form['search_params'] = array(
 	 '#type' => 'fieldset',
 	 '#title' => t('Search Parameters'),
