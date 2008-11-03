@@ -8,7 +8,7 @@
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY. See the LICENSE.txt file for more details.
 
-  $Id: morelikethis.admin.inc,v 1.1.2.2 2008/10/24 20:49:01 febbraro Exp $
+  $Id: morelikethis.admin.inc,v 1.1.2.3 2008/11/03 22:08:08 febbraro Exp $
  */
 /**
  * @file morelikethis.admin.inc
@@ -28,7 +28,7 @@ function morelikethis_settings() {
       '#type' => 'checkbox',
       '#title' => t('Pre-populate with Calais Suggestions'),
       '#default_value' => variable_get("morelikethis_calais_default", FALSE),
-      '#description' => t('If enabled the More Like This terms will get prepopulated from the Calais suggestions according to the threshold specified below.'),
+      '#description' => t('If enabled More Like This will provide a button to pre-populate terms from Calais suggestions according to the threshold specified below.'),
     );
     $form["morelikethis_calais_relevance"] = array(
       '#type' => 'textfield',
