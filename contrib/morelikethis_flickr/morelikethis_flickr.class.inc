@@ -11,8 +11,17 @@ abstract class FlickrBase extends MoreLikeThisBase {
     $tags = implode(", ", $this->terms);
     
     // http://www.flickr.com/services/api/flickr.photos.search.html
-    $params = array( 'tags'=>$tags, 'per_page'=>10, 'extras'=>'tags', 
-      'safe_search'=>1, 'sort'=>'relevance', 'content_type'=> 1);
+    
+    $params = array( 
+      'api_key' => variable_get('flickrapi_api_key', ''),
+      'tags'=>$tags, 
+      'per_page'=>variable_get('flickr_api_page_size', '10'), 
+      'extras'=>'tags', 
+      'safe_search'=>variable_get('flickr_api_page_safe_search', '1'), 
+      'sort'=>'relevance', 
+      'content_type'=> 1,
+      'tag_mode' => variable_get('flickr_api_page_tag_mode', 'any')
+    );
 
     $photos = $flickr->photos_search($params);
     $photos['search_tags'] = $tags;

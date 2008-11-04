@@ -24,11 +24,15 @@ function morelikethis_flickr_settings() {
   node_types_rebuild();
   $types = node_get_types('types', NULL, TRUE);
   
-  $form['global_settings'] = array( '#type' => 'fieldset', '#title'=> t('Global Settings'));
+  $form['node_type_settings'] = array( 
+    '#type' => 'fieldset', 
+    '#title'=> t('Enabled Node Types'),
+    '#description' => t('Select the node types that can display the flickr MLT block.')
+  );
   
   foreach($types as $type) {
   	$key = drupal_strtolower($type->type);
-	  $form['global_settings']["morelikethis_flickr_content_type_$key"] = array(
+	  $form['node_type_settings']["morelikethis_flickr_content_type_$key"] = array(
 	   '#type' => 'checkbox',
 	   '#title' => t($type->name),
 	   '#default_value' => variable_get("morelikethis_flickr_content_type_$key", NULL),
@@ -44,9 +48,25 @@ function morelikethis_flickr_settings() {
   $form['search_params']['flickr_api_page_size'] = array(
     '#type' => 'textfield',
     '#title' => t('Page Size'),
-    '#default_value' => variable_get('flickr_api_page_size', '10'),    
+    '#default_value' => variable_get('flickr_api_page_size', '10'),
+    '#size' => 3,
+    '#description' => t('Number of photos to display'),    
   );
-
+  
+  $form['search_params']['flickr_api_page_safe_search'] = array(
+    '#type' => 'select',
+    '#title' => 'Safe Search',
+    '#default_value' => variable_get('flickr_api_page_safe_search', '1'),
+    '#options' => array('1' => 'Safe', '2' => 'Moderate', '3' => 'Restricted'),
+  );
+  
+  $form['search_params']['flickr_api_page_tag_mode'] = array(
+    '#type' => 'select',
+    '#title' => 'Tag Search Mode',
+    '#default_value' => variable_get('flickr_api_page_tag_mode', 'any'),
+    '#options' => array('any' => 'Any', 'all' => 'All'),
+    '#description' => t("'any' for an OR combination of tags, or 'all' for an AND combination"),
+  );
   
   $form['search_params']['flickr_api_thumbnail_size'] = array(
     '#type' => 'select',
@@ -63,6 +83,9 @@ function morelikethis_flickr_settings() {
     '#default_value' => variable_get('flickr_api_thumbnail_size', ''),
   );
   
+  //TODO: Add min upload date.
+  //TODO: locations
+  //TODO: content type
   
   return  system_settings_form($form);
 }
