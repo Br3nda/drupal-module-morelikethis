@@ -4,5 +4,4 @@ package = "More Like This"
 description = "Provides a Flickr API image lookup"
 core = 6.x
 dependencies[] = morelikethis 
-dependencies[] = calais
 dependencies[] = flickrapi
