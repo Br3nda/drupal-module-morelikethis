@@ -8,7 +8,7 @@
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY. See the LICENSE.txt file for more details.
 
-  $Id: morelikethis.install,v 1.1.2.1 2008/10/17 21:42:37 febbraro Exp $
+  $Id: morelikethis.install,v 1.1.2.2 2008/11/20 23:02:01 emackn Exp $
  */
 /**
  * @file
@@ -19,6 +19,7 @@
  */
 function morelikethis_uninstall() {
   drupal_uninstall_schema('morelikethis');
+  drupal_uninstall_schema('morelikethis_node_settings');
 }
 
 /**
@@ -66,4 +67,40 @@ function morelikethis_schema() {
   );
   
   return $schema;
+}
+
+function morelikethis_update_6100() {
+  $schema['morelikethis_node_settings'] = array(
+    'descripiton' => 'Settings for which morelikethis contributed modules are enabled for a node instance.',
+    'fields' => array(
+      'vid' => array(
+        'type'=> 'int', 
+        'unsigned'=> TRUE, 
+        'not null'=>TRUE, 
+        'default' => 0, 
+        'description' => t('The node revision id')
+      ),
+      'nid' => array(
+        'type' => 'int', 
+        'unsigned' => TRUE, 
+        'not null' => TRUE, 
+        'default' => 0,
+        'description' => t('The node id')
+      ),
+      'contribs_enabled' => array(
+        'type' => 'text',
+        'size' => 'big',
+        'description' => t('Serialized array of the keys to enable for this nod.')      
+      ),      
+    ),
+
+    'indexes' => array(
+      'nid' => array('nid'),
+    ),
+    'primary key' => array('vid'),
+  );
+  
+  $ret = array();
+  db_create_table($ret, 'morelikethis_node_settings', $schema['morelikethis_node_settings']);
+  return $ret;
 }

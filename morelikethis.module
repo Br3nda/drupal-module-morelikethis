@@ -8,7 +8,7 @@
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY. See the LICENSE.txt file for more details.
 
-  $Id: morelikethis.module,v 1.1.2.7 2008/11/03 21:52:15 febbraro Exp $
+  $Id: morelikethis.module,v 1.1.2.8 2008/11/20 23:02:01 emackn Exp $
 */
 /**
  * @file morelikethis.module
@@ -197,12 +197,14 @@ function _mlt_block_view($delta){
   if(arg(0) == 'node' && is_numeric(arg(1))) {
     $services = _morelikethis_providers();
     $service = $services[$delta];
+    
     if($service) {
       $class = $service['#class'];
       $impl = new $class;
       
       $node = node_load(arg(1));
-      if($impl->isEnabled($node->type)) {
+
+      if($impl->isEnabled($node->type) && _morelikethis_node_enabled($node, $delta)) {
         $block['subject'] = t($service['#title']);
         $more = morelikethis_find(arg(1), $delta);    
         $block['content'] = theme(array("morelikethis_{$delta}_block", 'morelikethis_block'), $more);
@@ -234,7 +236,26 @@ function morelikethis_save($node, $data) {
   foreach($terms as $term) {
     db_query("INSERT INTO {morelikethis} (nid, vid, term) VALUES (%d, %d, '%s')", $node->nid, $node->vid, $term);
   }
+
+  // save per node contrib module settings
+  _save_mlt_node_settings($node);
 }
+
+/**
+ * Save the per node enabled contrib modules.
+ *
+ * @param object $node
+ *  from nodeapi.
+ */
+function _save_mlt_node_settings($node) {
+  db_query('DELETE FROM {morelikethis_node_settings} WHERE nid = %d', $node->nid);
+
+  $settings = serialize(array_values($node->morelikethis['enabled-contribs']));
+  $params = array($node->vid, $node->nid, $settings);
+  $sql = "INSERT INTO {morelikethis_node_settings} (vid, nid, contribs_enabled) VALUES (%d, %d, '%s')";
+  $result = db_query($sql, $params);
+}
+
 
 /**
  * Find all morelikethis results for all enabled services.
@@ -262,6 +283,9 @@ function morelikethis_find_all($nid) {
  *    The key identifying the morelikethis service to invoke.
  * @see 
  *    hook_morelikethis()
+ * 
+ * I did not include the _morelikethis_node_enabled check here since the check
+ * happens before the block content can be rendered.
  */
 function morelikethis_find($nid, $service = NULL) {
   static $morelikethis;
@@ -364,6 +388,22 @@ function morelikethis_form_alter(&$form, $form_state, $form_id) {
     
     $path = drupal_get_path('module', 'morelikethis');
     drupal_add_js("$path/morelikethis.js", 'module');
+    
+    $services = _morelikethis_providers();
+    $options = array();
+    foreach($services as $key => $service){
+      $options[$key] = $service['#title'];
+    }
+    
+    $contribs_enabled = (isset($node->morelikethis['enabled-contribs']) ? $node->morelikethis['enabled-contribs'] : array_keys($options));
+    
+    $form['morelikethis']["enabled-contribs"] = array(
+      '#type' => 'checkboxes',
+      '#title' => t('Enable the following Contributed modules for morelikethis'),
+      '#default_value' => $contribs_enabled,
+      '#options' => $options,
+      '#description' => t('The list above shows all available services to the MoreLikeThis module.  The checked services here, will only display if the service is available for this node type.  Check the '.l('MoreLikeThis settings page', 'admin/settings/morelikethis').' to enable services by node type.'),
+    );
   }
 }
 
@@ -383,24 +423,50 @@ function _morelikethis_is_enabled($type) {
 }
 
 /**
+ * determine if this node is allowed to use the service
+ *
+ * @param unknown_type $node
+ * @param unknown_type $service
+ * @return boolean
+ */
+function _morelikethis_node_enabled($node, $service) {
+  if(isset($node->morelikethis['enabled-contribs']))
+    return in_array($service, $node->morelikethis['enabled-contribs'], true);
+  
+  return true;
+}
+
+/**
  * Implementation of hook_nodeapi().
  */
 function morelikethis_nodeapi(&$node, $op) {
   switch ($op) {
     case 'insert':
     case 'update':
-      if(property_exists($node, 'morelikethis')) {
+    	if(property_exists($node, 'morelikethis')) {
         morelikethis_save($node, $node->morelikethis);
       }
       break;
     case 'delete':
       db_query('DELETE FROM {morelikethis} WHERE nid = %d', $node->nid);
+      db_query('DELETE FROM {morelikethis_node_settings} WHERE vid = %d', $node->vid);
       break;
     case 'view':
       $more = morelikethis_find_all($node->nid);
       _morelikethis_build_node_properties($node, $more);
+      
+      $enabled = _morelikethis_get_enabled_contribs($node->vid);
+      _morelikethis_set_enabled_contribs($node, $enabled);
       break;
+      
+    case 'load':  
+    case 'prepare':
+      $enabled = _morelikethis_get_enabled_contribs($node->vid);
+      _morelikethis_set_enabled_contribs($node, $enabled);
+    	
+    	break;
   }
+    
 }
 
 /**
@@ -424,6 +490,31 @@ function _morelikethis_build_node_properties(&$node, $more) {
       }
     }
   }
+}
+
+/**
+ * Look up the enabled contrib modues for this node.
+ *
+ * @param unknown_type $vid
+ * @return array or NULL
+ */
+function _morelikethis_get_enabled_contribs($vid) {
+  $result = db_query("SELECT * FROM {morelikethis_node_settings} WHERE vid = %d", $vid);
+  $found = db_fetch_object($result);
+  if($found) {
+    return unserialize($found->contribs_enabled);    
+  }
+  return NULL;
+}
+
+/**
+ * Set the enabled contrib modules
+ *
+ * @param unknown_type $node
+ * @param array $enabled
+ */
+function _morelikethis_set_enabled_contribs(&$node, $enabled) {
+  $node->morelikethis['enabled-contribs'] = $enabled;
 }
 
 /**
@@ -471,4 +562,5 @@ function _mlt_get_calais_defaults($node) {
   }
   return drupal_implode_tags($defaults);
 }
+
 
