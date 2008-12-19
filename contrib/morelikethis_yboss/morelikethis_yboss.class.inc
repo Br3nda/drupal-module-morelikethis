@@ -8,7 +8,7 @@
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY. See the LICENSE.txt file for more details.
 
-  $Id: morelikethis_yboss.class.inc,v 1.1.2.4 2008/10/24 20:44:32 febbraro Exp $
+  $Id: morelikethis_yboss.class.inc,v 1.1.2.5 2008/12/19 22:08:36 febbraro Exp $
 */
 /**
  * @file morelikethis_yboss.class.inc
@@ -26,18 +26,17 @@ abstract class YahooBossBase extends MoreLikeThisBase {
   }  
   
   protected function searchYboss($keys = '', $query = array(), $search = 'web', $version = 'v1') {
-    $query += array(
+    $defaults = array(
+      'lang' => variable_get('morelikethis_yboss_lang', 'en'),
       'appid' => variable_get('morelikethis_yboss_appid', ''),
       'format' => 'xml',
-      'lang' => variable_get('morelikethis_yboss_lang', 'en'),
       'region' => variable_get('morelikethis_yboss_region', 'us'),
     );
+    $query = array_merge($defaults, $query);
     
     $uri = 'http://boss.yahooapis.com/ysearch/' . $search . '/' . $version . '/' . drupal_urlencode($keys);
     $uri .= '?' . drupal_query_string_encode($query);
     $request = drupal_http_request($uri);
-    //dvm(check_plain($request->data));
-    //dvm($uri);
     
     if ($query['format'] == 'xml') {
       $response = simplexml_load_string($request->data);
@@ -80,7 +79,7 @@ class MoreLikeThisYahooBoss extends YahooBossBase {
     $type = drupal_strtolower($this->node->type);
     $search = variable_get("morelikethis_yboss_search_{$type}", 'web');
     $count = variable_get("morelikethis_yboss_count_{$type}", '10');
-    $yb_query = $this->getSetting($type, 'morelikethis_yboss_query', NULL);
+    $yb_query = variable_get("morelikethis_yboss_query", NULL);
 
     $query = array(
       'count' => $count,
@@ -152,12 +151,8 @@ class MoreLikeThisYahooBossImages extends YahooBossBase {
       'dimensions' => $this->getSetting($type, 'morelikethis_ybossimg_dimensions'),
     );
     
-    // Add the terms here, surrounded by quotes
-    $key_terms = array();
-    foreach($this->terms as $term) {
-      $key_terms[] = '"' . $term . '"';
-    }
-    $keys = implode($key_terms, ' ');
+    // Yahoo Boss can't search on more than one term, so pick the first term.
+    $keys = '"' . $this->terms[0] . '"';
     $keys .= $yb_query ? ' ' . $yb_query : '';
 
     $results = $this->searchYboss($keys, $query, 'images');
