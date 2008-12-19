@@ -8,7 +8,7 @@
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY. See the LICENSE.txt file for more details.
 
-  $Id: morelikethis.admin.inc,v 1.1.2.3 2008/11/03 22:08:08 febbraro Exp $
+  $Id: morelikethis.admin.inc,v 1.1.2.4 2008/12/19 22:23:04 febbraro Exp $
  */
 /**
  * @file morelikethis.admin.inc
@@ -35,7 +35,7 @@ function morelikethis_settings() {
       '#size' => 6,
       '#maxlength' => 6,
       '#title' => t('Relevance Threshold'),
-      '#default_value' => variable_get("morelikethis_calais_relevance", '0.500'),
+      '#default_value' => variable_get("morelikethis_calais_relevance", MORELIKETHIS_DEFAULT_RELEVENCE),
       '#description' => t('The relevance threshold for More Like This default terms. Only Calais suggestions with a relevance score <em>greater</em> than or equal to this threshold will be matched. This threshold is specified as a value between 0.000 and 1.000, with 1 being the most relevant.'),
     );
     $form = system_settings_form($form);
