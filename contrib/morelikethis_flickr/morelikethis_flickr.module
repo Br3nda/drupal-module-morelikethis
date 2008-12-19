@@ -11,7 +11,7 @@ function morelikethis_flickr_theme() {
 function morelikethis_flickr_morelikethis() {
   return array(
     'flickr' => array(
-      '#title' => 'More Like This Flickr',
+      '#title' => 'Flickr',
       '#description' => 'Lookup related content using Flickr',
       '#class' => 'MoreLikeThisFlickr',
       '#classfile' => 'morelikethis_flickr.class.inc',
