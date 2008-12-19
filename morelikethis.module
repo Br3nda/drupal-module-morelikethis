@@ -8,7 +8,7 @@
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY. See the LICENSE.txt file for more details.
 
-  $Id: morelikethis.module,v 1.1.2.8 2008/11/20 23:02:01 emackn Exp $
+  $Id: morelikethis.module,v 1.1.2.9 2008/12/19 22:14:37 febbraro Exp $
 */
 /**
  * @file morelikethis.module
@@ -19,6 +19,8 @@
  *          - apache solr search
  *          - any other mechanism that could be imagined
  */
+
+define('MORELIKETHIS_DEFAULT_RELEVENCE', '0.500');
 
 /**
  * Implementation of hook_perm().
@@ -62,11 +64,16 @@ function morelikethis_menu() {
     'access arguments' => $access,
     'file' => 'morelikethis.admin.inc',
   );
-
+  $items['admin/settings/morelikethis/general'] = array(
+    'title' => 'General',
+    'weight' => -1,
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  );
+  
   foreach ( $services as $service => $definition ) {  
     if(isset($definition['#settings'])) {
       $items['admin/settings/morelikethis/' . $service] = array(
-        'title' => $definition['#title'] , " Configuration",
+        'title' => $definition['#title'],
         'page callback' => 'drupal_get_form',
         'page arguments' => array($definition['#settings']),
         'access arguments' => $access,
@@ -182,7 +189,7 @@ function _mlt_block_list(){
   $services = _morelikethis_providers();
   foreach ( $services as $service => $definition ) {
     $blocks[$service] = array(
-      'info' => t($definition['#title'] . ' Block'),
+      'info' => t('More Like This @name Block', array('@name' => $definition['#title'])),
       'cache' => BLOCK_CACHE_PER_PAGE,
     );
   }
@@ -218,7 +225,7 @@ function _mlt_block_view($delta){
  * Load MLT term data for a node
  */
 function morelikethis_load($vid) {
-  $result = db_query("SELECT term FROM {morelikethis} WHERE vid = %d", $vid);
+  $result = db_query("SELECT term FROM {morelikethis} WHERE vid = %d ORDER BY term ASC", $vid);
   $terms = array();
   while($term = db_result($result)) {
     $terms[] = $term;
@@ -308,8 +315,7 @@ function morelikethis_find($nid, $service = NULL) {
   $impl = new $class;
   
   if($impl->isEnabled($node->type)) {
-    $impl->setNode($node);
-    $impl->addTerm($terms);
+    $impl->init($terms, $node);
     $morelikethis[$nid][$service] = $impl->find();    
   }
   return $morelikethis[$nid][$service];
@@ -343,8 +349,8 @@ function morelikethis_form_alter(&$form, $form_state, $form_id) {
         $options[$key][$term_name] = $term_name;
       }
     }
-    
-    $terms = drupal_implode_tags(morelikethis_load($node->vid));
+        
+    drupal_add_js(drupal_get_path('module', 'morelikethis') .'/morelikethis.js');
     
     $form['morelikethis'] = array(
       '#type' => 'fieldset',
@@ -354,6 +360,16 @@ function morelikethis_form_alter(&$form, $form_state, $form_id) {
       '#collapsed' => FALSE,
     );
 
+    if(variable_get('morelikethis_calais_default', FALSE)) {
+      $form['morelikethis']['use_calais_defaults'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Prefill from Calais'),
+        '#default_value' => isset($node->morelikethis->use_calais_defaults) ? $node->morelikethis->use_calais_defaults : TRUE,
+        '#description' => t('When checked, the More Like This terms will default to all Calais terms that have a relevance score of @score or greater. You can configure this value in the !settings.', array('@score' => variable_get("morelikethis_calais_relevance", MORELIKETHIS_DEFAULT_RELEVENCE), '!settings' => l('MoreLikeThis settings page', 'admin/settings/morelikethis'))),
+      );
+    }
+
+    $terms = drupal_implode_tags(morelikethis_load($node->vid));
     $form['morelikethis']['terms'] = array(
       '#type' => 'textfield',
       '#title' => t('More Like This Terms'),
@@ -361,20 +377,6 @@ function morelikethis_form_alter(&$form, $form_state, $form_id) {
       '#maxlength' => 512,
       '#default_value' => $terms,
     );
-
-    if(empty($terms) && variable_get('morelikethis_calais_default', FALSE)) {
-      $terms = _mlt_get_calais_defaults($node);
-      $form['morelikethis']['prefill'] = array(
-        '#type' => 'hidden',
-        '#value' => $terms,
-      );
-      $form['morelikethis']['prefill_button'] = array(
-        '#type' => 'button',
-        '#value' => t('Prefill from Calais'),
-        '#attributes' => array('onclick' => '$("#edit-morelikethis-terms").val($("#edit-morelikethis-prefill").val()); return false;'),
-        '#suffix' => '<span> - ' . t('OR') . ' - </span>',
-      );
-    }
 
     if(!empty($options)) {
       $form['morelikethis']['taxonomy-terms'] = array(
@@ -385,9 +387,6 @@ function morelikethis_form_alter(&$form, $form_state, $form_id) {
         '#options' => $options,
       );
     }   
-    
-    $path = drupal_get_path('module', 'morelikethis');
-    drupal_add_js("$path/morelikethis.js", 'module');
     
     $services = _morelikethis_providers();
     $options = array();
@@ -444,6 +443,7 @@ function morelikethis_nodeapi(&$node, $op) {
     case 'insert':
     case 'update':
     	if(property_exists($node, 'morelikethis')) {
+    	  _morelikethis_set_calais_defaults($node);
         morelikethis_save($node, $node->morelikethis);
       }
       break;
@@ -451,22 +451,12 @@ function morelikethis_nodeapi(&$node, $op) {
       db_query('DELETE FROM {morelikethis} WHERE nid = %d', $node->nid);
       db_query('DELETE FROM {morelikethis_node_settings} WHERE vid = %d', $node->vid);
       break;
-    case 'view':
-      $more = morelikethis_find_all($node->nid);
-      _morelikethis_build_node_properties($node, $more);
-      
-      $enabled = _morelikethis_get_enabled_contribs($node->vid);
-      _morelikethis_set_enabled_contribs($node, $enabled);
-      break;
-      
     case 'load':  
     case 'prepare':
       $enabled = _morelikethis_get_enabled_contribs($node->vid);
       _morelikethis_set_enabled_contribs($node, $enabled);
-    	
     	break;
   }
-    
 }
 
 /**
@@ -544,12 +534,23 @@ function theme_morelikethis_item($item) {
   return l("$item->title", $item->url);
 }
 
+// Calais Integration
+
+/**
+ * Pre-populate MLT terms based on relevant Calais terms
+ */
+function _morelikethis_set_calais_defaults(&$node) {
+  if($node->morelikethis['use_calais_defaults']) {
+    $node->morelikethis['terms'] = _mlt_get_calais_defaults($node);
+  }
+}
+
 /**
  * Return the calais defaults for the current node. Filter out the EventType vocabulary 
  * since it is not really relevant.
  */
 function _mlt_get_calais_defaults($node) {
-  $threshold =  variable_get("morelikethis_calais_relevance", '0.500');
+  $threshold =  variable_get("morelikethis_calais_relevance", MORELIKETHIS_DEFAULT_RELEVENCE);
   $keywords = calais_get_keywords($node->nid, $node->type, NULL, $threshold);
 
   $vocabs = calais_get_entity_vocabularies();
