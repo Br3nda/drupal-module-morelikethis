@@ -8,7 +8,7 @@
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY. See the LICENSE.txt file for more details.
 
-  $Id: morelikethis_yboss.module,v 1.1.2.6 2008/11/21 16:15:28 emackn Exp $
+  $Id: morelikethis_yboss.module,v 1.1.2.7 2008/12/19 22:07:40 febbraro Exp $
 */
 /**
  * @file morelikethis_yboss.module
@@ -37,14 +37,14 @@ function morelikethis_yboss_theme() {
 function morelikethis_yboss_morelikethis() {
   return array(
     'yboss' => array(
-      '#title' => 'More Like This Yahoo! BOSS',
+      '#title' => 'Yahoo! BOSS',
       '#description' => 'Lookup related content using Yahoo\'s Build your Own Search Service',
       '#class' => 'MoreLikeThisYahooBoss',
       '#classfile' => 'morelikethis_yboss.class.inc',
       '#settings' => 'morelikethis_yboss_settings',
     ),
     'ybossimg' => array(
-      '#title' => 'More Like This Yahoo! BOSS Images',
+      '#title' => 'Yahoo! BOSS Images',
       '#description' => 'Lookup related images using Yahoo\'s Build your Own Image Search Service',
       '#class' => 'MoreLikeThisYahooBossImages',
       '#classfile' => 'morelikethis_yboss.class.inc',
@@ -115,7 +115,7 @@ function morelikethis_yboss_settings() {
     '#type' => 'textfield',
     '#title' => t('Sites'),
     '#description' => t('You may append an additional specification of sites to use to the search query.  For example, <q>site:cnn.com -site:nytimes.com</q>. A minus preceeding the <em>site</em> keyword will specifically exclude a site.'),
-    '#default_value' => variable_get("{$prefix}_query", ''),
+    '#default_value' => variable_get("morelikethis_yboss_query", ''),
     '#maxlength' => 640,
     '#size' => 80,
   );
