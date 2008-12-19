@@ -15,7 +15,7 @@ function morelikethis_googlevideo_theme() {
 function morelikethis_googlevideo_morelikethis() {
   return array(
     'googlevideo' => array(
-      '#title' => 'More Like This Google Video',
+      '#title' => 'Google Video',
       '#description' => 'Lookup related content using Google Video Search Service',
       '#class' => 'MoreLikeThisGoogleVideo',
       '#classfile' => 'morelikethis_googlevideo.class.inc',
@@ -81,13 +81,6 @@ function morelikethis_googlevideo_settings() {
      '#default_value' => variable_get("morelikethis_gv_content_type_$key", NULL),
     );
   }
-  $form['gv_types']['gv_block_threshold'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Threshold'),
-    '#description' => t('Only tags having relevancy above the threshold are returned.  Number should be between 0.0 to 1.0'),
-    '#size' => 4,
-    '#default_value' => variable_get('gv_block_threshold', 0.25),
-  );	
 	
   $form['googlevideo'] = array(
     '#type' => 'fieldset',
@@ -152,64 +145,3 @@ function morelikethis_googlevideo_settings() {
 
   return system_settings_form($form);
 }
-
-/**
- * Helper to pull calais tags for the node provided.
- *
- * @param node object $node
- * @param float $threshold
- * @param string $delimeter
- * @return string of tags separated by $delimeter
- */
-function _get_calais_terms($node, $threshold, $delimeter = ", ") {
-  $tags = array();
-  $most_relevant = NULL;
-  
-  // calais_get_keywords only returns the keywords that meet the threshold set on the nodetype,
-  // so its a real possiblity to not get any resulting terms is the threshold is high.
-  // the term_more_relevant function should look at all the terms, and pick the most relevant of
-  // whats available, not necessarily just from the tags that meet the threshold.  This would be to
-  // ensure that the blocks are not empty.
-  $calais_suggestions = calais_get_keywords($node->nid, $node->type);
-
-  foreach($calais_suggestions as $vocab) {
-    if(empty($vocab))
-      continue;
-
-    foreach($vocab as $term) {
-      $c_term = calais_get_node_term($node->nid, $term);
-      
-      $most_relevant = term_more_relevant($c_term, $most_relevant);
-      
-      if((float)$c_term->relevance >= (float)$threshold) {
-        $tags[$c_term->relevance*1000] = $term;
-      }
-    }
-  }
-    
-  // if empty, return the highest rated tag.
-  if(empty($tags)){
-    $tags[] = $most_relevant->value;
-  }
-  
-  return implode($delimeter, $tags);
-}
-
-/**
- * From two terms, return the one with higher relevancy
- *
- * @param $term1
- * @param $term2
- * @return term with higher relevancy
- */
-function term_more_relevant($term1, $term2 = NULL) {
-  if($term2 == NULL)
-    return $term1;
-
-  if ((float)$term1->relevance > (float)$term2->relevance ) {
-    return $term1;  
-  }
-  return $term2;
-}
-
-
