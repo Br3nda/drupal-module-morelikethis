@@ -23,6 +23,11 @@ function morelikethis_flickr_morelikethis() {
 function morelikethis_flickr_settings() {
   node_types_rebuild();
   $types = node_get_types('types', NULL, TRUE);
+  $form['mlt_flickr_description'] = array(
+    '#prefix' => "<h4>",
+    '#suffix' => "</h4>",
+    '#value'=> t('More Like This Flickr allows you to incorporate photos from Flickr on a node page, by passing the applied MLT terms to the Flickr service as keywords, etc. '),
+  );
   
   $form['node_type_settings'] = array( 
     '#type' => 'fieldset', 
@@ -47,7 +52,7 @@ function morelikethis_flickr_settings() {
 	);
   $form['search_params']['flickr_api_page_size'] = array(
     '#type' => 'textfield',
-    '#title' => t('Page Size'),
+    '#title' => t('# of Photos'),
     '#default_value' => variable_get('flickr_api_page_size', '10'),
     '#size' => 3,
     '#description' => t('Number of photos to display'),    
@@ -58,6 +63,7 @@ function morelikethis_flickr_settings() {
     '#title' => 'Safe Search',
     '#default_value' => variable_get('flickr_api_page_safe_search', '1'),
     '#options' => array('1' => 'Safe', '2' => 'Moderate', '3' => 'Restricted'),
+    '#description' => t('Adjust the filters used to prevent objectionable photos from surfacing on your site.'),    
   );
   
   $form['search_params']['flickr_api_page_tag_mode'] = array(
@@ -65,13 +71,13 @@ function morelikethis_flickr_settings() {
     '#title' => 'Tag Search Mode',
     '#default_value' => variable_get('flickr_api_page_tag_mode', 'any'),
     '#options' => array('any' => 'Any', 'all' => 'All'),
-    '#description' => t("'any' for an OR combination of tags, or 'all' for an AND combination"),
+    '#description' => t('Use "Any" to include photos matching any combination of MLT terms applied to a node, and use "All" to only include photos matching EVERY MLT term applied.'),
   );
   
   $form['search_params']['flickr_api_thumbnail_size'] = array(
     '#type' => 'select',
     '#title' => t('Size Suffixes'),
-    '#description' => t('<a href="http://www.flickr.com/services/api/misc.urls.html">See Photo Source URLs documentation.</a>'),
+    '#description' => t('Choose a sizing constraint for photos returned by Flickr. Also <a href="http://www.flickr.com/services/api/misc.urls.html">See Photo Source URLs documentation.</a>'),
     '#options' => array(
       's' => t('small square, 75x75'),
       't' => t('thumbnail, 100 on longest side'),

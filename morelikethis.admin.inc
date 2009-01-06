@@ -8,7 +8,7 @@
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY. See the LICENSE.txt file for more details.
 
-  $Id: morelikethis.admin.inc,v 1.1.2.4 2008/12/19 22:23:04 febbraro Exp $
+  $Id: morelikethis.admin.inc,v 1.1.2.5 2009/01/06 21:30:32 emackn Exp $
  */
 /**
  * @file morelikethis.admin.inc
@@ -21,22 +21,26 @@ function morelikethis_settings() {
 
   drupal_set_title('More Like This Configuration Settings');
   $form = array();
-  
+  $form['main_description'] = array(
+    '#prefix' => "<h4>",
+    '#suffix' => "</h4>",
+    '#value'=> t("These are global settings for More Like This (MLT).  MLT terms are used to retrieve various types of related content, and are generally a subset of the larger pool of Calais tags.  However, in some instances you might want to apply an additional MLT term that was not suggested by Calais."),
+  );
   // Allow prepoulating by relevance if calais exists
   if(module_exists('calais')) {
     $form['morelikethis_calais_default'] = array(
       '#type' => 'checkbox',
       '#title' => t('Pre-populate with Calais Suggestions'),
       '#default_value' => variable_get("morelikethis_calais_default", FALSE),
-      '#description' => t('If enabled More Like This will provide a button to pre-populate terms from Calais suggestions according to the threshold specified below.'),
+      '#description' => t("Provides the ability to pre-fill applied MLT terms using eligible Calais terms by simply checking a box on a node's edit page (relevancy threshold below determines eligibility)."),
     );
     $form["morelikethis_calais_relevance"] = array(
       '#type' => 'textfield',
       '#size' => 6,
       '#maxlength' => 6,
-      '#title' => t('Relevance Threshold'),
+      '#title' => t('Global Term Relevancy Threshold for MLT'),
       '#default_value' => variable_get("morelikethis_calais_relevance", MORELIKETHIS_DEFAULT_RELEVENCE),
-      '#description' => t('The relevance threshold for More Like This default terms. Only Calais suggestions with a relevance score <em>greater</em> than or equal to this threshold will be matched. This threshold is specified as a value between 0.000 and 1.000, with 1 being the most relevant.'),
+      '#description' => t('Determine how relevant a Calais term must be in order to be considered a "candidate" for inclusion as an applied MLT term. Uses a 0.00-1.00 scale, 0.00 being least relevant (i.e. all Calais terms will be candidates for applied MLT terms). '),
     );
     $form = system_settings_form($form);
   }

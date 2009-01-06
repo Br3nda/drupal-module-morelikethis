@@ -8,7 +8,7 @@
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY. See the LICENSE.txt file for more details.
 
-  $Id: morelikethis_taxonomy.module,v 1.1.2.3 2008/12/19 22:09:47 febbraro Exp $
+  $Id: morelikethis_taxonomy.module,v 1.1.2.4 2009/01/06 21:30:33 emackn Exp $
 */
 /**
  * @file morelikethis_taxonomy.module
@@ -71,18 +71,31 @@ function morelikethis_taxonomy_settings() {
     $name = $type->name;
     $param_name = array('@name' => $name);
     
+    $form['morelikethis_tax_description'] = array(
+      '#prefix' => '<h4>',
+      '#suffix' => '</h4>',
+      '#value' => t('More Like This Taxonomy allows you to define the types/amount/relevancy of related nodes presented while actively viewing the <em>node at hand</em>.'),
+      );  
+      
+    $form['morelikethis_tax_example'] = array(
+      '#prefix' => '<p style="font-size:10px">',
+      '#suffix' => '</p>',
+      '#value' => t('Node Relevancy = (# of applied MLT terms for <em>node at hand</em> matching  applied Calais terms) / (total # of applied MLT terms for <em>node at hand</em>)<br/> For example, if 2 of 3 applied MLT terms for the <em>node at hand</em> matched the applied Calais terms for another node, the relevancy score would be 0.67.'),
+    );
     $form["morelikethis_{$key}"] = array(
       '#type' => 'fieldset',
       '#title' => t('@name', $param_name),
       '#collapsible' => TRUE,
-      '#collapsed' => FALSE,
+      '#collapsed' => TRUE,
+      '#description' => t('Define the parameters used to identify related content 
+        when the <em>node at hand</em> is of this type.'),
     );
 
     $form["morelikethis_{$key}"]["morelikethis_taxonomy_enabled_{$key}"] = array(
       '#type' => 'checkbox',
-      '#title' => t('Enable More Like This'),
+      '#title' => t('Enable More Like This Taxonomy'),
       '#default_value' => variable_get("morelikethis_taxonomy_enabled_{$key}", FALSE),
-      '#description' => t('Should searches for more content like this be enabled for this content type.'),
+      '#description' => t('Enable More Like This functionality for this content type.'),
     );
     $form["morelikethis_{$key}"]["morelikethis_taxonomy_target_types_{$key}"] = array(
       '#type' => 'select',
@@ -91,7 +104,7 @@ function morelikethis_taxonomy_settings() {
       '#options' => $options,
       '#multiple' => TRUE,
       '#size' => 4,
-      '#description' => t('Select which type of site content types you would like returned in more like this searches for @name. You can select multiple types by ctrl+click or apple+click.', $param_name),
+      '#description' => t('Choose which content types should be included in the search for nodes having MLT terms in common with this particular node.'),
     );
     $form["morelikethis_{$key}"]["morelikethis_taxonomy_count_{$key}"] = array(
       '#type' => 'textfield',
@@ -99,15 +112,15 @@ function morelikethis_taxonomy_settings() {
       '#size' => 4,
       '#maxlength' => 4,
       '#default_value' => variable_get("morelikethis_taxonomy_count_{$key}", '10'),
-      '#description' => t('Specify the number of items to include in the listing of More Like This results. Default: 10'),
+      '#description' => t('Define the maximum number of results that can be returned by More Like This.'),
     );
     $form["morelikethis_{$key}"]["morelikethis_taxonomy_threshold_{$key}"] = array(
       '#type' => 'textfield',
       '#size' => 6,
       '#maxlength' => 6,
-      '#title' => t('Threshold'),
+      '#title' => t('Node Relevancy Threshold for MLT Taxonomy'),
       '#default_value' => variable_get("morelikethis_taxonomy_threshold_{$key}", NULL),
-      '#description' => t('The relevancy threshold for More Like This association. Only items with a threshold score <em>greater</em> than or equal to this threshold will be matched. The threshold score is a percentage of terms that match. Specify the threshold in the range 0.0 - 1.0 (If 2 of 3 terms match, the threshold score is 0.667. 1 of 4 terms match is 0.25). Default: 0.0'),
+      '#description' => t('Set a minimum relevancy score that must be met in order for a match to be created.  Uses a 0.00-1.00 scale based on percentage of matching terms, 0.00 being least relevant (i.e. large number of loosely-related matches returned).'),
     );
   }
     

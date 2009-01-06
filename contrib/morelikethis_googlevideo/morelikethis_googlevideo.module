@@ -66,11 +66,16 @@ function morelikethis_googlevideo_settings() {
 
   node_types_rebuild();
   $types = node_get_types('types', NULL, TRUE);
+  $form['mlt_gv_description'] = array(
+    '#prefix' => "<h4>",
+    '#suffix' => "</h4>",
+    '#value' => t('More Like This Google Video allows you to incorporate content from Google Video on a node page, using the applied MLT terms that meet the Term Relevancy Threshold for MLT Google Video requirement.'),
+  );
   
   $form['gv_types'] = array(
     '#type' => 'fieldset',
-    '#title' => t('General Settings'),
-    '#description' => t('Select the types that allow More Like This Google Video content.'),
+    '#title' => t('Enabled Node Types'),
+    '#description' => t('Designate a set of content types that will support More Like This Google Video'),
   );
   
   foreach($types as $type) {
@@ -95,18 +100,19 @@ function morelikethis_googlevideo_settings() {
     '#title' => t('Result Set Size'),
     '#options' => array( 'true' => t("Large"), 'false' => t("Small") ),
     '#default_value' => variable_get('morelikethis_gv_large_result_set', 'false'),    
+    '#description' => t('Define the maximum number of results returned by Google Video (small = 4 results, large = 8 results).'),
   );
   $form['googlevideo']['morelikethis_gv_orient'] = array(
     '#type' => 'select',
     '#title' => t('Orientation'),
-    '#description' => t('Orientate the videos horizontally or Vertically.'),
+    '#description' => t('Choose an orientation for the video bar (horizontal row or vertical column).'),
     '#options' => array( 'true' => t('Horizontal'), 'false' => t('Vertical')),
     '#default_value' => variable_get('morelikethis_gv_orient', 'true'),    
   );  
   $form['googlevideo']['morelikethis_gv_cycle_time'] = array(
     '#type' => 'select',
     '#title' => t('Video Bar Cycle Time'),
-    '#description' => t('defines the amount of time between Video Bar refreshes'),
+    '#description' => t('Define the amount of time that elapses between refresh cycles (i.e. results set is larger than the number of videos that can be shown at once).'),
     '#options' => array(
       'GSvideoBar.CYCLE_TIME_SHORT' => t('CYCLE_TIME_SHORT // ~10s'),
       'GSvideoBar.CYCLE_TIME_MEDIUM' => t('CYCLE_TIME_MEDIUM // ~15s'),
@@ -117,7 +123,7 @@ function morelikethis_googlevideo_settings() {
   $form['googlevideo']['morelikethis_gv_cycle_mode'] = array(
     '#type' => 'select',
     '#title' => t('Video Bar Cycle Mode'),
-    '#description' => t('set the cycle mode to either random mode or sequential mode'),
+    '#description' => t('Choose between random and sequential cycles.'),
     '#options' => array(
       'GSvideoBar.CYCLE_MODE_LINEAR' => t('CYCLE_MODE_LINEAR'),
       'GSvideoBar.CYCLE_MODE_RANDOM' => t('CYCLE_MODE_RANDOM'),
@@ -127,7 +133,7 @@ function morelikethis_googlevideo_settings() {
   $form['googlevideo']['morelikethis_gv_use_statusroot'] = array(
     '#type' => 'checkbox',
     '#title' => t('Use Status Root'),
-    '#description' => t('Region with clickable links to manually switch the video bar'),
+    '#description' => t('Allow users to manually advance the rotation by clicking on links that correspond to the MLT terms utilized.'),
     '#default_value' => variable_get('morelikethis_gv_use_statusroot', TRUE),
   );  
   $form['googlevideo']['morelikethis_gv_statusroot_id'] = array(

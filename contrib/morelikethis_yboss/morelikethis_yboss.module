@@ -8,7 +8,7 @@
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY. See the LICENSE.txt file for more details.
 
-  $Id: morelikethis_yboss.module,v 1.1.2.7 2008/12/19 22:07:40 febbraro Exp $
+  $Id: morelikethis_yboss.module,v 1.1.2.8 2009/01/06 21:30:33 emackn Exp $
 */
 /**
  * @file morelikethis_yboss.module
@@ -111,10 +111,19 @@ function morelikethis_yboss_settings() {
   
   $form = array();
   $form = _mlt_yboss_global_settings('morelikethis_yboss');
+
+  $form['mlt_yboss_header'] = array(
+    '#prefix' => "<h4>",
+    '#suffix' => "</h4>",
+    '#value' => t('More Like This Yahoo! BOSS allows you to incorporate content from Yahoo! BOSS on a node page, by passing the applied MLT terms to the Yahoo! BOSS service along with the parameters defined below.'),
+    '#weight' => -100,
+  );
+
   $form['morelikethis']["morelikethis_yboss_query"] = array(
     '#type' => 'textfield',
     '#title' => t('Sites'),
-    '#description' => t('You may append an additional specification of sites to use to the search query.  For example, <q>site:cnn.com -site:nytimes.com</q>. A minus preceeding the <em>site</em> keyword will specifically exclude a site.'),
+    '#description' => t('Include/exclude sites from the standard BOSS collection.  
+      For example: <em>site:cnn.com</em> or <em>-site:nytimes.com</em>.'),
     '#default_value' => variable_get("morelikethis_yboss_query", ''),
     '#maxlength' => 640,
     '#size' => 80,
@@ -134,16 +143,16 @@ function morelikethis_yboss_settings() {
     );
     $form["morelikethis_{$key}"]["morelikethis_yboss_enabled_{$key}"] = array(
       '#type' => 'checkbox',
-      '#title' => t('Enable More Like This'),
+      '#title' => t('Enable More Like This Yahoo! BOSS'),
       '#default_value' => variable_get("morelikethis_yboss_enabled_{$key}", FALSE),
-      '#description' => t('Should searches for more content like this be enabled for this content type.'),
+      '#description' => t('Enable More Like This functionality for this content type.'),
     );
     $form["morelikethis_{$key}"]["morelikethis_yboss_search_{$key}"] = array(
       '#type' => 'select',
       '#title' => t('Type of BOSS Search'),
       '#options' => drupal_map_assoc(array('web', 'news')),
       '#default_value' => variable_get("morelikethis_yboss_search_{$key}", NULL),
-      '#description' => t('<em>web</em>: The entire web. <em>news</em>: Limited to news related sites'),
+      '#description' => t('Choose <em>web</em> (entire web) or <em>news</em> (news sites only)'),
     );
     $form["morelikethis_{$key}"]["morelikethis_yboss_count_{$key}"] = array(
       '#type' => 'textfield',
@@ -151,12 +160,12 @@ function morelikethis_yboss_settings() {
       '#size' => 4,
       '#maxlength' => 4,
       '#default_value' => variable_get("morelikethis_yboss_count_{$key}", '10'),
-      '#description' => t('Specify the number of items to include in the listing of More Like This results. Default: 10'),
+      '#description' => t('Choose the maximum number of results to be returned by Yahoo! BOSS.'),
     );
     $form["morelikethis_{$key}"]["morelikethis_yboss_query_{$key}"] = array(
       '#type' => 'textfield',
       '#title' => t('Sites'),
-      '#description' => t('You may append an additional specification of sites to use to the search query.  For example, <q>site:cnn.com -site:nytimes.com</q>. A minus preceeding the <em>site</em> keyword will specifically exclude a site. If this is blank it will use the global settings above.'),
+      '#description' => t('Include/exclude sites from the standard BOSS collection (on a content type-specific basis).  For example: <em>site:cnn.com</em> or <em>-site:nytimes.com</em>.'),
       '#default_value' => variable_get("morelikethis_yboss_query_{$key}", ''),
       '#maxlength' => 640,
       '#size' => 80,
@@ -188,6 +197,15 @@ function morelikethis_ybossimg_settings() {
   
   $form = array();
   $form = _mlt_yboss_global_settings('morelikethis_ybossimg');
+
+  $form['mlt_ybossimage_header'] = array(
+    '#prefix' => "<h4>",
+    '#suffix' => "</h4>",
+    '#value' => t('More Like This Yahoo! BOSS Images allows you to incorporate images from Yahoo! BOSS on a node page, by passing the applied MLT terms to the Yahoo! BOSS service along with the parameters defined below.'),
+    '#weight' => -100,
+  );
+
+
   $form['morelikethis']['#title'] = t('Yahoo! BOSS Images Global Settings');
     
   foreach ($types as $type) {
@@ -204,9 +222,9 @@ function morelikethis_ybossimg_settings() {
     );
     $form["morelikethis_{$key}"]["morelikethis_ybossimg_enabled_{$key}"] = array(
       '#type' => 'checkbox',
-      '#title' => t('Enable More Like This'),
+      '#title' => t('Enable More Like This Yahoo! BOSS Images'),
       '#default_value' => variable_get("morelikethis_ybossimg_enabled_{$key}", FALSE),
-      '#description' => t('Should searches for more content like this be enabled for this content type.'),
+      '#description' => t('Enable More Like This functionality for this content type.'),
     );
     $form["morelikethis_{$key}"]["morelikethis_ybossimg_count_{$key}"] = array(
       '#type' => 'textfield',
@@ -214,7 +232,7 @@ function morelikethis_ybossimg_settings() {
       '#size' => 4,
       '#maxlength' => 4,
       '#default_value' => variable_get("morelikethis_ybossimg_count_{$key}", '10'),
-      '#description' => t('Specify the number of items to include in the listing of More Like This results. Default: 10'),
+      '#description' => t('Choose the maximum number of results to be returned by Yahoo! BOSS Images.'),
     );
     $form["morelikethis_{$key}"]["morelikethis_ybossimg_filter_{$key}"] = array(
       '#type' => 'select',
