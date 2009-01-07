@@ -8,7 +8,7 @@
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY. See the LICENSE.txt file for more details.
 
-  $Id: morelikethis_taxonomy.class.inc,v 1.1.2.2 2008/10/24 20:47:40 febbraro Exp $
+  $Id: morelikethis_taxonomy.class.inc,v 1.1.2.3 2009/01/07 21:09:33 emackn Exp $
 */
 /**
  * @file morelikethis_taxonomy.class.inc
@@ -47,6 +47,7 @@ class MoreLikeThisTaxonomy extends MoreLikeThisBase {
     $sql .= " WHERE n.nid <> %d";
     $sql .= " AND n.type IN (" . db_placeholders($types, 'varchar') . ")";
     $sql .= " AND td.name IN (" . db_placeholders($this->terms, 'varchar') . ")";
+    $sql .= " AND n.status = 1";
     $sql .= " GROUP BY n.nid";
     $sql .= " HAVING relevance >= %f";
     $sql .= " ORDER BY hits DESC, n.nid DESC";
