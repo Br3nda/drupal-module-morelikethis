@@ -8,7 +8,7 @@
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY. See the LICENSE.txt file for more details.
 
-  $Id: morelikethis.module,v 1.1.2.9 2008/12/19 22:14:37 febbraro Exp $
+  $Id: morelikethis.module,v 1.1.2.10 2009/01/09 22:02:43 febbraro Exp $
 */
 /**
  * @file morelikethis.module
@@ -20,7 +20,7 @@
  *          - any other mechanism that could be imagined
  */
 
-define('MORELIKETHIS_DEFAULT_RELEVENCE', '0.500');
+define('MORELIKETHIS_DEFAULT_RELEVANCE', '0.500');
 
 /**
  * Implementation of hook_perm().
@@ -257,7 +257,8 @@ function morelikethis_save($node, $data) {
 function _save_mlt_node_settings($node) {
   db_query('DELETE FROM {morelikethis_node_settings} WHERE nid = %d', $node->nid);
 
-  $settings = serialize(array_values($node->morelikethis['enabled-contribs']));
+  $contribs = $node->morelikethis['enabled-contribs'] ? $node->morelikethis['enabled-contribs'] : array();
+  $settings = serialize(array_values($contribs));
   $params = array($node->vid, $node->nid, $settings);
   $sql = "INSERT INTO {morelikethis_node_settings} (vid, nid, contribs_enabled) VALUES (%d, %d, '%s')";
   $result = db_query($sql, $params);
@@ -550,7 +551,7 @@ function _morelikethis_set_calais_defaults(&$node) {
  * since it is not really relevant.
  */
 function _mlt_get_calais_defaults($node) {
-  $threshold =  variable_get("morelikethis_calais_relevance", MORELIKETHIS_DEFAULT_RELEVENCE);
+  $threshold =  variable_get("morelikethis_calais_relevance", MORELIKETHIS_DEFAULT_RELEVANCE);
   $keywords = calais_get_keywords($node->nid, $node->type, NULL, $threshold);
 
   $vocabs = calais_get_entity_vocabularies();
