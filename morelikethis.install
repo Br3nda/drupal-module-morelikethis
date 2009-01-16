@@ -8,7 +8,7 @@
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY. See the LICENSE.txt file for more details.
 
-  $Id: morelikethis.install,v 1.1.2.4 2009/01/16 19:32:59 emackn Exp $
+  $Id: morelikethis.install,v 1.1.2.5 2009/01/16 19:45:35 emackn Exp $
  */
 /**
  * @file
@@ -93,7 +93,7 @@ function morelikethis_schema() {
         'size' => 'tiny',
         'unsigned' => TRUE, 
         'not null' => FALSE, 
-        'default' => 0,
+        'default' => 1,
         'description' => t('Does this item use its own terms, or get prefilled by calais')
       ),
     ),
@@ -158,3 +158,12 @@ function morelikethis_update_6101() {
   return $ret;
 
 }
+
+function morelikethis_update_6102() {
+  $ret = array();
+  db_field_set_default($ret, 'morelikethis_node_settings', 'prefill_with_calais', 1);
+  return $ret;
+}
+
+
+
