@@ -100,19 +100,7 @@ function theme_morelikethis_flickr_block($items) {
   // todo: add flag for to disable this, since if you override
   // the theme.. this becomes useless.
   drupal_add_css(drupal_get_path('module', "morelikethis") . "/contrib/morelikethis_flickr/mlt_flickr.css");
-  drupal_add_js("
-    $(document).ready(function(){
-      $('ul.mlt-flickr li').hover(
-        function(){ $(this).children('.tags').show();},
-        function(){ $(this).children('.tags').hide();}
-        );
-      $('#block-morelikethis-flickr h2').hover(
-        function(){ $('#block-morelikethis-flickr .search-with').show();},
-        function(){ $('#block-morelikethis-flickr .search-with').hide();}
-        );
-    });", "inline");
-	
-  
+  drupal_add_js(drupal_get_path('module', "morelikethis") . "/contrib/morelikethis_flickr/mlt_flickr.js");
   
   $output = "<div class='search-with' style='display:none;'>".$items['search_tags']. "</div>";
   $output .= "<ul class='mlt-flickr'>";
