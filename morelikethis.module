@@ -8,7 +8,7 @@
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY. See the LICENSE.txt file for more details.
 
-  $Id: morelikethis.module,v 1.1.2.10 2009/01/09 22:02:43 febbraro Exp $
+  $Id: morelikethis.module,v 1.1.2.11 2009/01/16 19:32:59 emackn Exp $
 */
 /**
  * @file morelikethis.module
@@ -233,7 +233,6 @@ function morelikethis_load($vid) {
   return $terms;
 }
 
-
 /**
  * Save the data used to render the morelikethis terms.
  */
@@ -259,8 +258,8 @@ function _save_mlt_node_settings($node) {
 
   $contribs = $node->morelikethis['enabled-contribs'] ? $node->morelikethis['enabled-contribs'] : array();
   $settings = serialize(array_values($contribs));
-  $params = array($node->vid, $node->nid, $settings);
-  $sql = "INSERT INTO {morelikethis_node_settings} (vid, nid, contribs_enabled) VALUES (%d, %d, '%s')";
+  $params = array($node->vid, $node->nid, $settings, $node->morelikethis['prefill-with-calais']);
+  $sql = "INSERT INTO {morelikethis_node_settings} (vid, nid, contribs_enabled, prefill_with_calais) VALUES (%d, %d, '%s', %d)";
   $result = db_query($sql, $params);
 }
 
@@ -362,10 +361,11 @@ function morelikethis_form_alter(&$form, $form_state, $form_id) {
     );
 
     if(variable_get('morelikethis_calais_default', FALSE)) {
-      $form['morelikethis']['use_calais_defaults'] = array(
+      $form['morelikethis']['prefill-with-calais']= array(
         '#type' => 'checkbox',
         '#title' => t('Prefill from Calais'),
-        '#default_value' => isset($node->morelikethis->use_calais_defaults) ? $node->morelikethis->use_calais_defaults : TRUE,
+        '#default_value' => isset($node->morelikethis['prefill-with-calais']) ? 
+          $node->morelikethis['prefill-with-calais'] : TRUE,
         '#description' => t('When checked, the More Like This terms will default to all Calais terms that have a relevance score of @score or greater. You can configure this value in the !settings.', array('@score' => variable_get("morelikethis_calais_relevance", MORELIKETHIS_DEFAULT_RELEVENCE), '!settings' => l('MoreLikeThis settings page', 'admin/settings/morelikethis'))),
       );
     }
@@ -395,7 +395,7 @@ function morelikethis_form_alter(&$form, $form_state, $form_id) {
       $options[$key] = $service['#title'];
     }
     
-    $contribs_enabled = (isset($node->morelikethis['enabled-contribs']) ? $node->morelikethis['enabled-contribs'] : array_keys($options));
+    $contribs_enabled = (!empty($node->morelikethis['enabled-contribs']) ? $node->morelikethis['enabled-contribs'] : array_keys($options));
     
     $form['morelikethis']["enabled-contribs"] = array(
       '#type' => 'checkboxes',
@@ -430,7 +430,7 @@ function _morelikethis_is_enabled($type) {
  * @return boolean
  */
 function _morelikethis_node_enabled($node, $service) {
-  if(isset($node->morelikethis['enabled-contribs']))
+  if(!empty($node->morelikethis['enabled-contribs']))
     return in_array($service, $node->morelikethis['enabled-contribs'], true);
   
   return true;
@@ -454,8 +454,8 @@ function morelikethis_nodeapi(&$node, $op) {
       break;
     case 'load':  
     case 'prepare':
-      $enabled = _morelikethis_get_enabled_contribs($node->vid);
-      _morelikethis_set_enabled_contribs($node, $enabled);
+      $mlt_node_settings = _morelikethis_get_node_settings($node->vid);
+      _morelikethis_set_node_settings($node, $mlt_node_settings);
     	break;
   }
 }
@@ -489,11 +489,12 @@ function _morelikethis_build_node_properties(&$node, $more) {
  * @param unknown_type $vid
  * @return array or NULL
  */
-function _morelikethis_get_enabled_contribs($vid) {
+//function _morelikethis_get_enabled_contribs($vid) {
+function _morelikethis_get_node_settings($vid) {
   $result = db_query("SELECT * FROM {morelikethis_node_settings} WHERE vid = %d", $vid);
   $found = db_fetch_object($result);
   if($found) {
-    return unserialize($found->contribs_enabled);    
+    return $found;
   }
   return NULL;
 }
@@ -504,8 +505,10 @@ function _morelikethis_get_enabled_contribs($vid) {
  * @param unknown_type $node
  * @param array $enabled
  */
-function _morelikethis_set_enabled_contribs(&$node, $enabled) {
-  $node->morelikethis['enabled-contribs'] = $enabled;
+//function _morelikethis_set_enabled_contribs(&$node, $settings) {
+function _morelikethis_set_node_settings(&$node, $settings) {
+  $node->morelikethis['enabled-contribs'] = unserialize($settings->contribs_enabled);    
+  $node->morelikethis['prefill-with-calais'] = $settings->prefill_with_calais;    
 }
 
 /**
@@ -541,7 +544,8 @@ function theme_morelikethis_item($item) {
  * Pre-populate MLT terms based on relevant Calais terms
  */
 function _morelikethis_set_calais_defaults(&$node) {
-  if($node->morelikethis['use_calais_defaults']) {
+
+  if($node->morelikethis['prefill-with-calais']) {
     $node->morelikethis['terms'] = _mlt_get_calais_defaults($node);
   }
 }

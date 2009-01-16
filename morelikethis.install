@@ -8,7 +8,7 @@
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY. See the LICENSE.txt file for more details.
 
-  $Id: morelikethis.install,v 1.1.2.3 2008/11/20 23:40:56 emackn Exp $
+  $Id: morelikethis.install,v 1.1.2.4 2009/01/16 19:32:59 emackn Exp $
  */
 /**
  * @file
@@ -88,6 +88,14 @@ function morelikethis_schema() {
         'size' => 'big',
         'description' => t('Serialized array of the keys to enable for this nod.')      
       ),      
+      'prefill_with_calais' => array(
+        'type' => 'int', 
+        'size' => 'tiny',
+        'unsigned' => TRUE, 
+        'not null' => FALSE, 
+        'default' => 0,
+        'description' => t('Does this item use its own terms, or get prefilled by calais')
+      ),
     ),
 
     'indexes' => array(
@@ -133,4 +141,20 @@ function morelikethis_update_6100() {
   $ret = array();
   db_create_table($ret, 'morelikethis_node_settings', $schema['morelikethis_node_settings']);
   return $ret;
+}
+
+function morelikethis_update_6101() {
+  $prefill = array(
+    'type' => 'int', 
+    'size' => 'tiny',
+    'unsigned' => TRUE, 
+    'not null' => FALSE, 
+    'default' => 0,
+    'description' => t('Does this item use its own terms, or filled by calais')
+  );
+  
+  $ret = array();
+  db_add_field($ret, 'morelikethis_node_settings', 'prefill_with_calais', $prefill);
+  return $ret;
+
 }

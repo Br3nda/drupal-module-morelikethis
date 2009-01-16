@@ -1,4 +1,4 @@
-// $Id: morelikethis.js,v 1.1.2.1 2008/12/19 22:15:17 febbraro Exp $
+// $Id: morelikethis.js,v 1.1.2.2 2009/01/16 19:32:59 emackn Exp $
 
 /**
  * Add the UI functionality for the term selction.
@@ -23,14 +23,14 @@ Drupal.behaviors.moreLikeThis = function(context) {
 	});
 	
 	// Setup the Calais checkbox
-	if ($("#edit-morelikethis-use-calais-defaults").size() && $("#edit-morelikethis-use-calais-defaults").attr("checked")) {
+	if ($("#edit-morelikethis-prefill-with-calais").size() && $("#edit-morelikethis-prefill-with-calais").attr("checked")) {
     // Hide its description and the taxonomy selector
     $("#edit-morelikethis-terms").attr("disabled","disabled");
     $("#edit-morelikethis-terms-wrapper > div.description").hide(0);
     $("#edit-morelikethis-taxonomy-terms-wrapper").hide(0);
   }
-  $("#edit-morelikethis-use-calais-defaults").click(function() {
-    if ($("#edit-morelikethis-use-calais-defaults").attr("checked")) {
+  $("#edit-morelikethis-prefill-with-calais").click(function() {
+    if ($("#edit-morelikethis-prefill-with-calais").attr("checked")) {
 			// Use Calais is clicked. Disable/hide fields
       $("#edit-morelikethis-terms").attr("disabled","disabled");
       $("#edit-morelikethis-terms-wrapper > div.description").slideUp('fast');
