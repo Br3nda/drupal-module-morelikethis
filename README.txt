@@ -1,35 +1,12 @@
-; $Id: README.txt,v 1.1.2.3 2008/10/30 16:50:30 emackn Exp $
+; $Id: README.txt,v 1.1.2.4 2009/01/23 16:44:29 febbraro Exp $
 
 More Like This
 --------------
-More Like This provides a mechanism (and soon a framework) for providing related content. It currently only 
-supports and internal taxonomy search, but the plan is to open it up with a framework for
-plugging in morelikethis providers.  This data is provided either as a block or as node
-properties to be manipulated during theming.
-
-Taxonomy Lookup
----------------
-This initial release includes a taxonomy based lookup mechanism for More Like This content. It works by first
-specifying your "Thumbprint" for a particular node on the node edit form. By thumbprint we mean you can specify
-the terms/words that you, as an editor, feel uniquely identifies this content item.  You can either select existing
-taxonomy terms associated with this specific node, or enter free hand terms.  When performing the lookup we will 
-determine what other nodes in the site match the provided More Like This terms and those with the highest 
-relevance/hit count will appear first in the list.
+More Like This provides a framework for providing related content. This data is provided as a block to be manipulated during theming.
 
 Configuration
---------------
-From Site Configuration -> More Like This settings you can configure the various settings that control
-the functionality.  More Like This is configured on a per Content Type basis and allows you to configure 
-the following features:
-   
-   * Enabled - Is More Like This functionality provided for this specific Content Type
-   * Target Types - Which other site Content Type will be searched as related content
-   * Count - The maximum number of entries to return in the More Like This query/listing
-   * Threshold - This is a filter on More Like This results based on a percentage of matching Terms
-   
-To sum up the configuration, if enabled, More Like This for a specfic content type will search for existing 
-content of the specified target types ordered by relevance that meet a certain threshold of matched terms and
-will return no more than the specified count. Sounds easy right? :)
+-------------
+If you have the Calais module also installed (http://drupal.org/project/opencalais) you have the option of pre-filling your More Like This terms based on Calais Suggestions.  The field called "Global Term Relevancy Threshold for MLT" is used to limit which terms are applied based on the relevance score returned form Calais. The value is specified as a number that ranges from 0.0 to 1.0.  Specifying 0.0 will use all Calais Terms (there will be quite a few, many of which will be irrelevant). Specifying 1.0 will almost guarantee no significant terms.  We have found that a value around 0.55-0.7 works pretty well, but should be tested on your content first.
 
 Theme
 --------------
@@ -43,43 +20,15 @@ theme_morelikethis_item($item)
 This formats an individual related item for display. It currently creates a link to the related node and the
 link text is the node title with the relevance percentage. Example: Node Title (80%)
 
+Current Providers
+----------------
+These modules can be found in the contrib/ directory.
+ - Taxonomy
+ - Flickr
+ - Google Video
+ - Yahoo! BOSS Web/News Search
+ - Yahoo! BOSS Image Search
 
-Node Properties
----------------
-The node properties are specified as such:
-
-$node->morelikethis = array(
-  [0] => array(
-    ['#view'] => '<a href="some/node/path">Node Title (80%)</a>',
-    ['#item'] => object(stdClass)#18 (4) {
-      ["id"]=> "183"
-      ["title"]=> "Node Title"
-      ["url"]=> "node/183"
-      ["mlt_type"]=> "taxonomy"
-      
-      // Optional properties provided by the modules may be...
-      ["nid"]=> "183"
-      ["type"]=> "story"
-      ["hits"]=> "4"
-      ["relevance"]=> "0.8"
-    }
-  )
-)
-
-You can theme them within an existing node.tpl.php with:
-
-<?php if ($node->morelikethis): ?>
-  <div class="morelikethis">
-    <h3>More Like This</h3>
-    <?php
-      $items = array();
-      foreach ($node->morelikethis as $item) {
-        $items[] = $item['#view'];          
-      }
-      print theme('item_list', $items);
-    ?>
-  </div>
-<?php endif;?>
 
 Future Providers
 ----------------
@@ -88,10 +37,8 @@ develop a pluggable architecture for search providers to integrate other mechani
 
 These might include:
  - Local Calais recommendataions
- - Apache Solr instances
  - Internal Drupal content search
- - Yahoo BOSS Service
- - Google
+ - Apache Solr instances
 
  
 Building a MoreLikeThis Plugin
@@ -133,6 +80,7 @@ So where do you start?
 }
   
 The Module Settings
+-------------------
  - With this done, the MLT module knows about our service (if enabled), and if
    you have the 'settings' function implemented in your module file, you 
    should see it as an option on the 'admin/settings/morelikethis' page after 
@@ -164,6 +112,7 @@ Output Theming
    are pretty straight forward.
  
 Troubleshooting
+---------------
  - Make sure you have hook_theme implemented for your module.
  - clear cache with devel module
  - check your isEnabled method to make sure it's return what you expect.
