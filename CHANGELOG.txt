@@ -1,0 +1,7 @@
+// $Id: CHANGELOG.txt,v 1.1.2.1 2009/01/30 22:49:23 febbraro Exp $
+
+1.0 -> 1.1
+------------------
+ - Updated for new calais_get_keywords response format
+ - For Calais Prefill, terms are now sorted with most relevant first
+ - Calais prefill ignored CalaisDocumentCategory (should probably make this configurable)
