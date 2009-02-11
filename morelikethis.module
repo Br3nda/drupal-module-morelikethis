@@ -8,7 +8,7 @@
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY. See the LICENSE.txt file for more details.
 
-  $Id: morelikethis.module,v 1.1.2.12 2009/01/30 22:49:54 febbraro Exp $
+  $Id: morelikethis.module,v 1.1.2.13 2009/02/11 01:07:56 febbraro Exp $
 */
 /**
  * @file morelikethis.module
@@ -576,9 +576,9 @@ function _mlt_get_calais_defaults($node) {
 }
 
 function _mlt_relevance_sort($a, $b) {
-  if ($a->score == $b->score) {
+  if ($a->relevance == $b->relevance) {
       return 0;
   }
-  return ($a->score > $b->score) ? -1 : 1;
+  return ($a->relevance > $b->relevance) ? -1 : 1;
 }
 
