@@ -8,7 +8,7 @@
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY. See the LICENSE.txt file for more details.
 
-  $Id: morelikethis.admin.inc,v 1.1.2.5 2009/01/06 21:30:32 emackn Exp $
+  $Id: morelikethis.admin.inc,v 1.1.2.6 2009/02/16 21:53:45 emackn Exp $
  */
 /**
  * @file morelikethis.admin.inc
@@ -39,13 +39,13 @@ function morelikethis_settings() {
       '#size' => 6,
       '#maxlength' => 6,
       '#title' => t('Global Term Relevancy Threshold for MLT'),
-      '#default_value' => variable_get("morelikethis_calais_relevance", MORELIKETHIS_DEFAULT_RELEVENCE),
+      '#default_value' => variable_get("morelikethis_calais_relevance", MORELIKETHIS_DEFAULT_RELEVANCE),
       '#description' => t('Determine how relevant a Calais term must be in order to be considered a "candidate" for inclusion as an applied MLT term. Uses a 0.00-1.00 scale, 0.00 being least relevant (i.e. all Calais terms will be candidates for applied MLT terms). '),
     );
     $form = system_settings_form($form);
   }
   else {
-    // Do this only if there are no settings to displau (b/c Calais is not enabled)
+    // Do this only if there are no settings to display (b/c Calais is not enabled)
     $services = _morelikethis_providers();
     foreach ($services as $key=> $service) {
       if(isset($service['#settings'])) {
