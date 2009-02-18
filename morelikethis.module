@@ -8,7 +8,7 @@
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY. See the LICENSE.txt file for more details.
 
-  $Id: morelikethis.module,v 1.1.2.13 2009/02/11 01:07:56 febbraro Exp $
+  $Id: morelikethis.module,v 1.1.2.14 2009/02/18 19:24:30 febbraro Exp $
 */
 /**
  * @file morelikethis.module
@@ -402,7 +402,7 @@ function morelikethis_form_alter(&$form, $form_state, $form_id) {
       '#title' => t('Enable the following Contributed modules for morelikethis'),
       '#default_value' => $contribs_enabled,
       '#options' => $options,
-      '#description' => t('The list above shows all available services to the MoreLikeThis module.  The checked services here, will only display if the service is available for this node type.  Check the '.l('MoreLikeThis settings page', 'admin/settings/morelikethis').' to enable services by node type.'),
+      '#description' => t('Override module configuration made at the content type-level for this particular node (content-type level changes can be made on the !settings)', array('!settings' => l('MoreLikeThis settings page', 'admin/settings/morelikethis'))),
     );
   }
 }
