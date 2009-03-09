@@ -11,6 +11,7 @@ abstract class FlickrBase extends MoreLikeThisBase {
     $tags = implode(", ", $this->terms);
     
     // http://www.flickr.com/services/api/flickr.photos.search.html
+    // licensing, http://www.flickr.com/services/api/flickr.photos.licenses.getInfo.html
     
     $params = array( 
       'api_key' => variable_get('flickrapi_api_key', ''),
@@ -20,7 +21,8 @@ abstract class FlickrBase extends MoreLikeThisBase {
       'safe_search'=>variable_get('flickr_api_page_safe_search', '1'), 
       'sort'=>'relevance', 
       'content_type'=> 1,
-      'tag_mode' => variable_get('flickr_api_page_tag_mode', 'any')
+      'tag_mode' => variable_get('flickr_api_page_tag_mode', 'any'),
+      'license' => 7,
     );
 
     $photos = $flickr->photos_search($params);
