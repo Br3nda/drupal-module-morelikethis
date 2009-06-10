@@ -8,7 +8,7 @@
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY. See the LICENSE.txt file for more details.
 
-  $Id: morelikethis.module,v 1.1.2.14 2009/02/18 19:24:30 febbraro Exp $
+  $Id: morelikethis.module,v 1.1.2.15 2009/06/10 20:15:56 febbraro Exp $
 */
 /**
  * @file morelikethis.module
@@ -358,6 +358,7 @@ function morelikethis_form_alter(&$form, $form_state, $form_id) {
       '#tree' => TRUE,
       '#collapsible' => TRUE,
       '#collapsed' => FALSE,
+      '#weight' => (function_exists('content_extra_field_weight') && isset($form['type'])) ? content_extra_field_weight($form['type']['#value'], 'morelikethis') : 0,
     );
 
     if(variable_get('morelikethis_calais_default', FALSE)) {
@@ -405,6 +406,21 @@ function morelikethis_form_alter(&$form, $form_state, $form_id) {
       '#description' => t('Override module configuration made at the content type-level for this particular node (content-type level changes can be made on the !settings)', array('!settings' => l('MoreLikeThis settings page', 'admin/settings/morelikethis'))),
     );
   }
+}
+
+/**
+ * Implementation of hook_content_extra_fields().
+ */
+function morelikethis_content_extra_fields($type_name) {
+  $fields = array();
+  if (_morelikethis_is_enabled($type_name)) {
+    $fields['morelikethis'] = array(
+      'label' => t('More Like This'),
+      'description' => t('More Like This module form.'),
+      'weight' => 0,
+    );
+  }
+  return $fields;
 }
 
 // Check if this type is enabled for any service.
